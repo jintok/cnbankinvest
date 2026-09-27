@@ -21,13 +21,14 @@ scripts/refresh_weekly.sh --date 2026-09-25   # 复现指定日期；周末运�
 - 代码在 `src/cnbankinvest/`（可编辑安装，`python -m cnbankinvest.<模块>` 调用）；Python 3.14 venv 在 `.venv/`（uv 管理，依赖锁定在 `uv.lock`）。
 - 依赖只有 **akshare 1.18.97 + pandas 3.0.6**（pyproject 精确锁版）。
 
-## Pipeline（scripts/refresh_weekly.sh 的 5 步，顺序固定）
+## Pipeline（scripts/refresh_weekly.sh 的 6 步，顺序固定）
 
 1. `data_puller` → `data/market_*.json`
 2. `news_puller` → `data/news_*.json`
-3. `fin_report_analysis` → `data/fundamentals_*.json`（合并手工台账）
-4. `gen_weekly_report` → `output/weekly/bank_weekly_*.md`
-5. `gen_site` → `docs/`（GitHub Pages 静态站，Source=/docs）
+3. `fin_indicators_puller` → `data/fin_indicators_*.json`（专项指标：东财 F10+分红送配）
+4. `fin_report_analysis` → `data/fundamentals_*.json`（合并专项指标自动层 + 手工台账）
+5. `gen_weekly_report` → `output/weekly/bank_weekly_*.md`
+6. `gen_site` → `docs/`（GitHub Pages 静态站，Source=/docs）
 
 关键语义：**单步失败不中断**——每步只读 `data/` 下 ≤ `--date` 的最新缓存，生成器与拉数解耦。`--date` 由 shell 原样传给全部脚本，各脚本只取自己认识的参数。
 
@@ -37,8 +38,9 @@ scripts/refresh_weekly.sh --date 2026-09-25   # 复现指定日期；周末运�
 - `watchlist.json` — 标的唯一来源（12 银行 + 指数），所有脚本从这里读，不要硬编码代码。
 - `output/` — 有留存价值、**入库**的产出：`weekly/`（周报）、`single/`（个股报告）、`news/`（人工新闻笔记）、`blog/`（人工观点文章）。
 - `data/` — 原始快照（`market_*`/`news_*`/`fundamentals_*`/`hist/`）已 gitignore（可按需重拉）；`data/hist/*.json` 日线缓存为 **tmp+replace 原子写**，沿用此约定。
-- 手工维护、**脚本不得覆盖**：`data/regulatory_indicators.json`（行业监管指标）、`data/bank_fundamentals.json`（个股专项）——缺项在报告中标「待填」属正常设计。
+- 手工维护、**脚本不得覆盖**：`data/regulatory_indicators.json`（行业监管指标，akshare 无源）、`data/bank_fundamentals.json`（个股专项的**覆盖层**，非空值优先于 `fin_indicators_*` 自动值）——缺项在报告中标「待填」属正常设计。
 - `src/cnbankinvest/templates/` — 周报/个股报告模板（随包内走）；`INTERFACE_NOTES.md` — akshare 接口实测笔记，**改数据源前必读**。
+- 定期报告 PDF 链路：`report_fetcher`（东财公告→art_code→pdf.dfcfw.com 下载到 `data/reports/`）+ `report_extractor`（pdfplumber 锚点正则+众数，`report_anchors/{code}.json` 按行覆盖）。
 - `gen_site` 为纯标准库 Markdown 渲染器（无外部依赖、可离线），读 `output/weekly|single`，把【待人工撰写】等内部标记剥除后出网页版。
 
 ## Network gotchas（实测结论，勿凭直觉换接口）

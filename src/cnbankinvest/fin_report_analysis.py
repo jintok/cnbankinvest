@@ -249,6 +249,26 @@ def load_json(path):
         return json.load(f)
 
 
+def find_latest_indicators(target_date: str):
+    """data/ 下 ≤ target_date 的最新 fin_indicators_*.json → (dict|None, as_of|None)。"""
+    files = sorted(DATA_DIR.glob("fin_indicators_*.json"))
+    ok = [f for f in files if f.stem.rsplit("_", 1)[-1] <= target_date]
+    if not ok:
+        return None, None
+    f = ok[-1]
+    return load_json(f), f.stem.rsplit("_", 1)[-1]
+
+
+AUTO_FIELDS_MAP = {
+    "report": "period",
+    "nim_pct": "nim_pct",
+    "npl_ratio_pct": "npl_ratio_pct",
+    "provision_coverage_pct": "provision_coverage_pct",
+    "cet1_pct": "cet1_pct",
+    "payout_ratio_pct": "payout_ratio_pct",
+}
+
+
 def atomic_write_json(path, obj):
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -291,6 +311,12 @@ def main():
     # credit_macro 运行时探针
     credit_macro, probe_notes = probe_credit_macro(missing)
 
+    # 银行专项指标自动层（fin_indicators_puller 缓存，手工台账值优先）
+    indicators, indicators_as_of = find_latest_indicators(args.date)
+    auto_by_code = {b.get("a_code"): b for b in (indicators or {}).get("banks", [])}
+    if indicators_as_of is None:
+        missing.append("fin_indicators: 无可用缓存（可运行 fin_indicators_puller）")
+
     # 个股: 同花顺财务摘要
     banks_out = []
     for st in watchlist:
@@ -308,29 +334,46 @@ def main():
             missing.append(f"{name}({a_code}) 同花顺财务摘要获取失败: {type(e).__name__} {str(e)[:60]}")
         time.sleep(THS_SLEEP)
 
+        # curated 生效层: 手工台账非空值优先, 其次自动指标; sources 记录每字段来源
         cur = curated_by_code.get(a_code)
-        curated = {f: (cur.get(f) if cur else None) for f in CURATED_FIELDS}
+        auto_rec = auto_by_code.get(a_code) or {}
+        curated, sources = {}, {}
+        for f in CURATED_FIELDS:
+            manual = cur.get(f) if cur else None
+            auto_v = auto_rec.get(AUTO_FIELDS_MAP[f])
+            if manual is not None:
+                curated[f], sources[f] = manual, "curated"
+            elif auto_v is not None:
+                curated[f], sources[f] = auto_v, "auto"
+            else:
+                curated[f], sources[f] = None, None
         banks_out.append({
             "name": name,
             "a_code": a_code,
             "segment": st.get("segment"),
             "analysis": analysis,
             "curated": curated,
+            "indicators_auto": {
+                "as_of": indicators_as_of,
+                "fields": sources,
+                "period": auto_rec.get("period"),
+                "payout_fy": auto_rec.get("payout_fy"),
+            },
         })
 
-    # curated_gaps: 最新监管期的空字段 + 各银行 report/nim 待填报, 封顶 20 条
+    # curated_gaps: 最新监管期的空字段 + 各银行生效层仍缺 report/nim 的条目, 封顶 20 条
     gaps = []
     reg_target = latest_item if latest_item else (reg_items[0] if reg_items else None)
     if reg_target:
         for f, label in REG_LABELS:
             if reg_target.get(f) is None:
                 gaps.append(f"监管指标 {reg_target['period']} {label}待填报")
-    for st in watchlist:
-        cur = curated_by_code.get(st["a_code"])
-        if cur is None or cur.get("report") is None:
-            gaps.append(f"{st['name']} 最新报告期待填报")
-        if cur is None or cur.get("nim_pct") is None:
-            gaps.append(f"{st['name']} 净息差待填报")
+    for b in banks_out:
+        eff = b["curated"]
+        if eff.get("report") is None:
+            gaps.append(f"{b['name']} 最新报告期待填报")
+        if eff.get("nim_pct") is None:
+            gaps.append(f"{b['name']} 净息差待填报")
     gaps = gaps[:20]
 
     result = {
@@ -339,6 +382,7 @@ def main():
             "generated_at": datetime.now().isoformat(timespec="seconds"),
             "missing": missing,
             "curated_gaps": gaps,
+            "fin_indicators_as_of": indicators_as_of,
         },
         "industry_regulatory": industry_regulatory,
         "credit_macro": credit_macro,

@@ -32,8 +32,9 @@ scripts/refresh_weekly.sh          # 周五收盘后运行；或 --date 2026-09-
 
 1. `data_puller` → `data/market_YYYY-MM-DD.json`（行情/资金/利率快照）
 2. `news_puller` → `data/news_YYYY-MM-DD.json`（银行快讯 + watchlist 公告）
-3. `fin_report_analysis` → `data/fundamentals_YYYY-MM-DD.json`（基本面自动部分 + 人工台账合并）
-4. `gen_weekly_report` → `output/weekly/bank_weekly_YYYY-MM-DD.md`（周报）
+3. `fin_indicators_puller` → `data/fin_indicators_YYYY-MM-DD.json`（净息差/不良率/拨备覆盖率/资本充足率/分红率，东财 F10+分红送配）
+4. `fin_report_analysis` → `data/fundamentals_YYYY-MM-DD.json`（基本面自动部分 + 专项指标自动层 + 人工台账合并）
+5. `gen_weekly_report` → `output/weekly/bank_weekly_YYYY-MM-DD.md`（周报）
 
 然后：打开 `output/weekly/` 下最新报告，按文末「人工待办清单」完成
 **核心观点 / 观点初稿修订 / 下周关注补充**，并填报台账（见下）。
@@ -79,21 +80,22 @@ A 股侧走强」。周报据此生成解读：优选跑赢 → H 折价侧走�
 A 股侧走强（溢价收敛）。溢价汇总与南向资金周净流向并列展示，供人工判断 AH 轮动的
 持续性（南向持续净流入通常收敛 H 股折价、推升溢价）。
 
-## 手工维护台账（必填）
+## 手工维护台账（人工补充/覆盖层）
 
-自动流程**拿不到**的银行专项指标，靠两个手工 JSON（报告会以「待填」标出缺口）：
+自动流程已覆盖大部分指标（`fin_indicators_puller` 从东财 F10 主要指标 + 分红送配拉取
+净息差/不良率/拨备覆盖率/核心一级/资本充足率/分红率，拨备覆盖率由拨贷比÷不良率推导，
+分红率为上一完整财年口径）。两个手工 JSON 降级为**补充/覆盖层**（非空值优先于自动值）：
 
-- `data/regulatory_indicators.json` — **行业监管指标**：来源为国家金融监督管理总局
+- `data/regulatory_indicators.json` — **行业监管指标**（**仍需手工**，akshare 无金监总局接口）：来源为国家金融监督管理总局
   每季度《商业银行主要监管指标》通报（金监总局官网「统计数据」栏目）。发布后在
   `items` 头部追加最新一期，填 `nim_pct`（净息差）/ `npl_ratio_pct`（不良率）/
   `provision_coverage_pct`（拨备覆盖率）/ `car_pct`（资本充足率）/ `profit_yoy_pct`。
-- `data/bank_fundamentals.json` — **个股 curated 字段**：来源为各银行定期报告/业绩说明会，
+- `data/bank_fundamentals.json` — **个股 curated 字段**（自动值的覆盖层，一般可不填）：来源为各银行定期报告/业绩说明会，
   填 `report`（最新披露期）/`nim_pct`/`npl_ratio_pct`/`provision_coverage_pct`/
   `cet1_pct`（核心一级）/`payout_ratio_pct`（分红率）。
 
-`fin_report_analysis` 每次运行会把这两个文件合并进 `fundamentals_*.json` 的
-`curated` / `industry_regulatory` 字段，并在 `meta.curated_gaps` 列出仍缺的项目；
-`gen_weekly_report` 将其渲染为报告第七节的「本周待办」清单。
+`fin_report_analysis` 每次运行把自动指标层与这两个文件合并进 `fundamentals_*.json`
+（手工非空值优先），`meta.curated_gaps` 只列自动+手工都缺的项目。
 
 **入库策略**：`output/`（周报/个股报告/人工新闻笔记/观点博客）与 `docs/`（站点）入库；
 `data/` 下原始快照（`market_*`/`news_*`/`fundamentals_*`/`hist/`）可按需重拉、已 gitignore——
@@ -111,7 +113,8 @@ A 股侧走强（溢价收敛）。溢价汇总与南向资金周净流向并列
   yoy 由接口直接给出；跨期比较时注意口径（INTERFACE_NOTES.md L 节）。
 - **社融增量近期常为 null**：源接口（`macro_china_shrzgm` 候选链）数据滞后，
   报告中以「—」如实呈现，不以前值填充。
-- **无净息差/不良率自动源**：akshare 无商业银行监管指标接口，只能手工维护（见上）。
+- **行业监管指标无自动源**：akshare 无金监总局商业银行监管指标接口，行业口径仍手工维护；
+  个股口径已由 `fin_indicators_puller` 自动覆盖（见「手工维护台账」）。
 - **南向资金周合计为近 5 个交易日口径**（非自然周），遇长假会跨周。
 - **股息率 TTM 为自算口径**：按近 365 天除息记录，与行情软件的「股息率(TTM)」可能略有差异。
 
@@ -128,18 +131,23 @@ cnbankinvest/               # 本仓库即原 finance 仓库 bank/ 模块的独�
 │   ├── paths.py              # 仓库级路径约定（data/ output/ docs/ 唯一来源）
 │   ├── data_puller.py        # 行情快照 → data/market_*.json
 │   ├── news_puller.py        # 新闻公告 → data/news_*.json
+│   ├── fin_indicators_puller.py  # 银行专项指标 → data/fin_indicators_*.json
 │   ├── fin_report_analysis.py# 基本面分析 → data/fundamentals_*.json
 │   ├── gen_weekly_report.py  # 周报生成 → output/weekly/*.md
 │   ├── gen_single_report.py  # 个股报告 → output/single/*.md
 │   ├── gen_site.py           # 静态站点 → docs/
+│   ├── report_fetcher.py     # 定期报告 PDF 下载 → data/reports/*.pdf
+│   ├── report_extractor.py   # PDF 指标提取（pdfplumber 锚点+众数）
+│   ├── report_anchors/       # 每银行提取锚点覆盖（可选 JSON）
 │   ├── templates/            # 周报/个股报告模板（随包内走）
 │   └── probes/               # akshare 接口探针（历史，含 probe_results.json）
 ├── data/                     # 大部分 gitignore（可按需重拉）
 │   ├── regulatory_indicators.json  # 手工：行业监管指标（入库）
-│   ├── bank_fundamentals.json      # 手工：个股专项指标（入库）
+│   ├── bank_fundamentals.json      # 手工：个股专项指标（入库，自动值覆盖层）
 │   ├── spread_history.json         # 核心池股息率-10Y利差序列（入库）
-│   ├── market_*.json / news_*.json / fundamentals_*.json   # 周快照（gitignore）
-│   └── hist/                 # 日线收盘缓存（增量合并，gitignore）
+│   ├── market_*.json / news_*.json / fundamentals_*.json / fin_indicators_*.json   # 周快照（gitignore）
+│   ├── hist/                 # 日线收盘缓存（增量合并，gitignore）
+│   └── reports/              # 定期报告 PDF + 提取结果（gitignore，report_fetcher 可重下）
 ├── output/                   # 有留存价值的产出（全部入库）
 │   ├── weekly/               # 生成的周报 Markdown
 │   ├── single/               # 生成的个股报告 Markdown
@@ -165,3 +173,24 @@ cnbankinvest/               # 本仓库即原 finance 仓库 bank/ 模块的独�
 - 八节结构：投资结论与建议（短期 1–4 周 / 长期 6–24 月两个子块，自动初稿+待人工修订）→ 公司概况（人工）→ 近期行情与市场表现 → 估值分析（vs 全池及同板块中位数：PB/PE-TTM/股息率/股息率−10Y利差）→ 基本面分析（报告期趋势表 + 手工台账行）→ 近期公告与舆情（按本行过滤）→ 催化剂与风险提示（人工）→ 跟踪清单（本行台账缺口 + 数据日历）。
 - 行情/估值/基本面全部自动填充；`--code` 不在 watchlist 内时报错并列出 12 家可用代码。
 - 示例：`output/single/招商银行_银行个股报告_20260925.md`。
+
+---
+
+## 定期报告 PDF 深度分析（report_fetcher + report_extractor）
+
+需要比 F10 指标更深的数据（生息资产结构、贷款质量明细、分段息差等）时，直接下 PDF 提取：
+
+```sh
+# 下载（东财公告链路：标题→art_code→pdf.dfcfw.com，实测可用）
+.venv/bin/python -m cnbankinvest.report_fetcher --code 601398            # 最新一期（读 fin_indicators 缓存）
+.venv/bin/python -m cnbankinvest.report_fetcher --code 601398 --period 2025年报
+.venv/bin/python -m cnbankinvest.report_fetcher --all                    # 12 家 × 各自最新一期
+
+# 提取（pdfplumber，锚点正则 + 众数取值，输出指标值/命中页码 + 与 F10 交叉验证）
+.venv/bin/python -m cnbankinvest.report_extractor --pdf data/reports/601398_2026中报.pdf --code 601398
+```
+
+- PDF 存 `data/reports/`（gitignore 可重下），提取结果 JSON 存 `data/reports/extracts/`。
+- 默认正则覆盖净息差（含「净利息收益率」别名）/不良率/拨备覆盖率/资本充足率族/杠杆率/成本收入比；
+  某行版式特殊时放 `src/cnbankinvest/report_anchors/{code}.json` 覆盖（见该目录 README）。
+- 工行/招行 2026中报实测：与 F10 自动层交叉验证 **6/6 一致**（含由拨贷比推导的拨备覆盖率）。

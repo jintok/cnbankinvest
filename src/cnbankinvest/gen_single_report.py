@@ -184,9 +184,15 @@ def render_fundamentals(bank_fund: dict | None, gaps: list) -> str:
         v = cur.get(key)
         return dash(v) if v is not None else "待填"
 
-    parts.append("\n**专项指标（curated 手工台账，来源：定期报告/业绩说明会）**\n")
+    parts.append("\n**专项指标（自动拉取：东财 F10/分红送配；手工台账值优先）**\n")
     parts.append(md_table(["报告期(已披露)"] + [lb for _, lb in cur_labels],
                           [[cur.get("report") or "待填"] + [cv(k) for k, _ in cur_labels]]))
+    auto_info = (bank_fund or {}).get("indicators_auto") or {}
+    if auto_info.get("as_of"):
+        parts.append(f"\n> 自动层缓存 fin_indicators_{auto_info['as_of']}"
+                     f"（报告期 {auto_info.get('period') or '—'}，"
+                     f"分红率财年 {auto_info.get('payout_fy') or '—'}）；"
+                     f"手工台账 `bank_fundamentals.json` 非空值优先覆盖。")
     bank_gaps = [g for g in gaps if g.startswith(bank_fund.get("name", "\0"))]
     if bank_gaps:
         parts.append("\n本行台账待填：" + "；".join(bank_gaps) + "。")

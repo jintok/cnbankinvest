@@ -494,8 +494,14 @@ def render_appendix_ledger(fund: dict) -> str:
                      dash(lat.get("roe_pct")),
                      cv("nim_pct"), cv("npl_ratio_pct"), cv("provision_coverage_pct", nd=0),
                      cv("cet1_pct"), cv("payout_ratio_pct")])
-    return md_table(["名称", "最新期", "营收YoY%", "净利YoY%", "ROE%(单季)",
-                     "净息差%", "不良率%", "拨备覆盖率%", "核心一级%", "分红率%"], rows)
+    table = md_table(["名称", "最新期", "营收YoY%", "净利YoY%", "ROE%(单季)",
+                      "净息差%", "不良率%", "拨备覆盖率%", "核心一级%", "分红率%"], rows)
+    as_of = (fund.get("meta") or {}).get("fin_indicators_as_of")
+    note = (f"\n\n> 专项指标来源：东财 F10 主要指标/分红送配自动拉取"
+            f"（fin_indicators_{as_of}），手工台账 `bank_fundamentals.json` 非空值优先；"
+            f"分红率为上一完整财年口径。" if as_of else
+            "\n\n> 专项指标来源：仅手工台账（fin_indicators 缓存缺失）。")
+    return table + note
 
 
 def render_appendix_news(news: dict, fund: dict) -> str:

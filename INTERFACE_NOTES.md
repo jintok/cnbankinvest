@@ -145,3 +145,39 @@
 - **单位速查**：新浪 A股日线 volume=股、amount=元；东财 hist 成交额=元；`stock_value_em` 市值=元；南向资金历史=亿元；同花顺财务摘要=带单位字符串；存贷款月度=亿元；收益率=%；中行牌价=100 外币。
 - **日期格式**：东财/中证/中债类用字符串 `yyyymmdd`；新浪系返回 `datetime.date` 对象；csindex 返回 `日期` 字符串列。
 - **Python 3.14 兼容性**：本轮探针全部接口在 3.14.6 下无兼容性问题（akshare 1.18.97 + pandas 3.0.6）。
+
+---
+
+## 专项指标与定期报告链路（2026-09-27 实测，阶段1/2 选型依据）
+
+### 东财 F10 主要指标（银行专项列，datacenter-web 域名，可用需重试）
+
+`ak.stock_financial_analysis_indicator_em(symbol="601398.SH", indicator="按报告期")` — 141 列，85 个报告期。
+
+- **银行专项列**：`NET_INTEREST_MARGIN`(净息差%) / `NET_INTEREST_SPREAD`(净利差%) /
+  `NON_PERFORMING_LOAN`(不良余额,元) / `GROSSLOANS`(贷款总额,元) / `LOAN_PROVISION_RATIO`(拨贷比%) /
+  `HXYJBCZL`(核心一级%) / `FIRST_ADEQUACY_RATIO`(一级%) / `NEWCAPITALADER`(资本充足率%) /
+  `TOTALDEPOSITS`(存款,元) / `LTDRR`(贷存比,小数)。
+- ⚠️ `RISK_COVERAGE`(拨备覆盖率) 列存在但 12 家银行全为 None → **由拨贷比÷不良率推导**（不良率=不良余额÷贷款总额），实测与报告值一致（工行 2.80/1.287≈217.5 vs 报告 217.58）。
+- 口径：NIM/不良余额**季度**更新；拨贷比/资本充足率族**半年度**（季报行为 NaN，符合监管披露节奏）。
+- 报告期标识：`REPORT_DATE_NAME`（"2026中报"）+ `NOTICE_DATE`（披露日）。
+
+### 东财分红送配详情（分红率推导）
+
+`ak.stock_fhps_detail_em(symbol="601398")` — 按报告期一行（年报/中报各一），列含
+`现金分红-现金分红比例`(每10股派X元) / `每股收益`(该期累计) / `方案进度`。
+**分红率 = 财年内(中期+期末)每10股分红合计÷10 ÷ 年报EPS**：工行 FY2025 = (1.414+1.689)/10÷1.00 = 31.0% ✓。
+
+### 定期报告 PDF 下载链路（report_fetcher 用）
+
+1. `ak.stock_individual_notice_report(security, symbol="财务报告", begin_date, end_date)` — datacenter-web 域名✅，含定期报告全文条目（标题+公告页 URL）。
+2. `https://np-cnotice-stock.eastmoney.com/api/content/ann?art_code=AN...&client_source=web&page_index=1` — 公告内容 JSON，`attach_list` 含 PDF 直链与大小；**挑最大附件**（全文而非摘要）。urllib 直连可用。
+3. `https://pdf.dfcfw.com/pdf/H2_{art_code}_1.pdf` — PDF 下载✅（工行中报 6MB）。
+- 巨潮 cninfo hisAnnouncement API 可达但 SSE 股票参数需先查 org-id，暂不用（东财链路已够）。
+
+### PDF 提取版式要点（report_extractor 用，工行/招行 2026中报实测）
+
+- 主要指标表行格式：`不良贷款率（7） 1.29 1.31 1.34`——label 后有**全角脚注号**`（N）`，随后 3 列为本期/上期/上上期；正则必须先跳过脚注号再取数。
+- 别名：工行 NIM 写作「净利息收益率」、spread 写作「净利息差」；招行用「净息差」。资本充足率族需 lookbehind 防子串误配（核心一级/一级 vs 总）。
+- 同一指标在摘要/主要指标/管理层讨论/子公司段落重复出现且**口径可能不同**（集团 vs 银行/权重法），取**众数**、离散时退回首现值（最早页=法定主要指标表）。
+- 交叉验证：工行/招行中报提取值 vs F10 自动层 6/6 一致。
