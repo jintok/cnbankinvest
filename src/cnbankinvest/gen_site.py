@@ -4,6 +4,9 @@
 把 output/weekly/（板块周报）、output/single/（个股报告）渲染成自包含的离线 HTML 站点：
 - 纯标准库实现的最小 Markdown→HTML 渲染器（见 SUPPORTED 注释）；
 - 全站统一暗色主题（CSS 内联，无 CDN/外部资产，可离线打开）；
+- 左侧可折叠导航栏：站内导航 + 本页目录（h2/h3 锚点，自动反映周报/个股报告结构）
+  + 周报归档 + 个股报告列表；宽屏默认展开、窄屏 overlay，开合状态存 localStorage，
+  滚动时高亮当前阅读节（内联 vanilla JS，无外部依赖）；
 - 剥离内部批注：HTML 注释与【待人工撰写】等人工标记不进入网页版（待填/待补保留）；
 - 输出：docs/index.html、docs/methodology.html、docs/reports/weekly/*.html、docs/reports/single/*.html。
 
@@ -30,14 +33,30 @@ INTERNAL_MARKERS = ("【待人工撰写】", "【待人工修订】", "【人工
 
 CSS = """
 * { box-sizing: border-box; }
-body { background:#0d1117; color:#c9d1d9; margin:0; font-family:-apple-system,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif; line-height:1.65; }
-nav { background:#161b22; border-bottom:1px solid #30363d; padding:12px 20px; font-size:15px; }
-nav a { color:#58a6ff; text-decoration:none; margin-right:18px; }
-nav a:hover { text-decoration:underline; }
+html { scroll-behavior: smooth; }
+body { background:#0d1117; color:#c9d1d9; margin:0; padding-top:48px; font-family:-apple-system,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif; line-height:1.65; transition:padding-left .25s ease; }
+.topbar { position:fixed; top:0; left:0; right:0; z-index:30; height:48px; display:flex; align-items:center; gap:12px; background:#161b22; border-bottom:1px solid #30363d; padding:0 14px; }
+.topbar .brand { color:#e6edf3; font-weight:600; font-size:15px; }
+.nav-toggle { width:34px; height:32px; background:#0d1117; border:1px solid #30363d; border-radius:6px; color:#58a6ff; font-size:15px; line-height:1; cursor:pointer; }
+.nav-toggle:hover { background:#21262d; }
+.sidebar { position:fixed; top:48px; bottom:0; left:0; width:280px; z-index:40; overflow-y:auto; overscroll-behavior:contain; background:#0d1117; border-right:1px solid #30363d; padding:2px 12px 40px; transform:translateX(-100%); transition:transform .25s ease; }
+body.nav-open .sidebar { transform:none; }
+.sb-backdrop { display:none; position:fixed; top:48px; left:0; right:0; bottom:0; z-index:35; background:rgba(1,4,9,.6); }
+.sb-title { color:#8b949e; font-size:12px; margin:18px 4px 6px; }
+.sb-list { list-style:none; margin:0; padding:0; }
+.sb-list li { margin:1px 0; }
+.sb-list a { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#58a6ff; text-decoration:none; font-size:14px; padding:4px 8px; border-radius:6px; border-left:2px solid transparent; }
+.sb-list a:hover { background:#161b22; text-decoration:none; }
+.sb-list a.current { color:#e6edf3; background:#161b22; border-left-color:#58a6ff; }
+.toc a.active { color:#e6edf3; background:#161b22; border-left-color:#f0883e; }
+.toc li.lv3 { padding-left:16px; }
+.toc li.lv3 a { font-size:13px; }
+@media (min-width:900px) { body.nav-open { padding-left:280px; } }
+@media (max-width:899.98px) { body.nav-open .sb-backdrop { display:block; } }
 main { max-width:960px; margin:0 auto; padding:24px 20px 60px; }
 h1 { border-bottom:1px solid #30363d; padding-bottom:10px; font-size:26px; }
-h2 { border-bottom:1px solid #21262d; padding-bottom:6px; margin-top:36px; font-size:21px; }
-h3 { font-size:17px; color:#c9d1d9; }
+h2 { border-bottom:1px solid #21262d; padding-bottom:6px; margin-top:36px; font-size:21px; scroll-margin-top:64px; }
+h3 { font-size:17px; color:#c9d1d9; scroll-margin-top:64px; }
 a { color:#58a6ff; }
 strong { color:#e6edf3; }
 code { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:2px 6px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:0.9em; }
@@ -50,6 +69,50 @@ hr { border:none; border-top:1px solid #30363d; margin:28px 0; }
 ul, ol { padding-left:24px; }
 li { margin:4px 0; }
 footer { border-top:1px solid #30363d; color:#8b949e; font-size:13px; text-align:center; padding:20px; }
+"""
+
+JS = """
+(function () {
+  var KEY = 'cnbi-sidebar-open';
+  var body = document.body;
+  var wide = window.matchMedia('(min-width: 900px)');
+  var saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) {}
+  if (saved === '1') { body.classList.add('nav-open'); }
+  else if (saved === '0') { body.classList.remove('nav-open'); }
+  else if (wide.matches) { body.classList.add('nav-open'); }
+  function save() {
+    try { localStorage.setItem(KEY, body.classList.contains('nav-open') ? '1' : '0'); } catch (e) {}
+  }
+  document.getElementById('navToggle').addEventListener('click', function () {
+    body.classList.toggle('nav-open'); save();
+  });
+  var backdrop = document.getElementById('sbBackdrop');
+  if (backdrop) {
+    backdrop.addEventListener('click', function () { body.classList.remove('nav-open'); save(); });
+  }
+  var sidebar = document.getElementById('sidebar');
+  if (sidebar) {
+    sidebar.addEventListener('click', function (e) {
+      if (e.target.closest('a') && !wide.matches) { body.classList.remove('nav-open'); save(); }
+    });
+  }
+  var map = {};
+  document.querySelectorAll('.toc a').forEach(function (a) {
+    map[a.getAttribute('href').slice(1)] = a;
+  });
+  var heads = Object.keys(map).map(function (id) {
+    return document.getElementById(id);
+  }).filter(Boolean);
+  if (!heads.length) { return; }
+  function spy() {
+    var y = window.scrollY + 96, cur = '';
+    heads.forEach(function (h) { if (h.offsetTop <= y) { cur = h.id; } });
+    Object.keys(map).forEach(function (id) { map[id].classList.toggle('active', id === cur); });
+  }
+  window.addEventListener('scroll', spy, { passive: true });
+  spy();
+})();
 """
 
 
@@ -93,10 +156,15 @@ def render_table(rows: list) -> str:
     return "".join(out)
 
 
-def md_to_html(md: str) -> str:
-    """块级渲染：标题/表格/列表/引用/分隔线/段落（见文件头 SUPPORTED）。"""
+def md_to_html(md: str) -> tuple[str, list]:
+    """块级渲染：标题/表格/列表/引用/分隔线/段落（见文件头 SUPPORTED）。
+
+    返回 (html, headings)：headings 为 (级别, 原文本, 锚点id) 列表，
+    供侧栏「本页目录」生成锚点链接（锚点用顺序编号，规避中文 slug）。
+    """
     lines = strip_internal(md).split("\n")
     parts, para, i, n = [], [], 0, len(lines)
+    headings: list = []
 
     def flush_para():
         if para:
@@ -113,7 +181,9 @@ def md_to_html(md: str) -> str:
         if m:
             flush_para()
             lv = len(m.group(1))
-            parts.append(f"<h{lv}>{inline(m.group(2))}</h{lv}>")
+            hid = f"toc-{len(headings)}"
+            headings.append((lv, m.group(2).strip(), hid))
+            parts.append(f'<h{lv} id="{hid}">{inline(m.group(2))}</h{lv}>')
             i += 1
             continue
         if re.match(r"^(-{3,}|\*{3,})\s*$", line):
@@ -162,23 +232,81 @@ def md_to_html(md: str) -> str:
         para.append(line)
         i += 1
     flush_para()
-    return "\n".join(parts)
+    return "\n".join(parts), headings
 
 
-# ---------------------------------------------------------------- 页面包装
+# ---------------------------------------------------------------- 页面包装（顶栏 + 左侧栏）
 
-def page(title: str, body: str, prefix: str, nav_weekly: str, nav_single: str,
-         gen_time: str) -> str:
-    nav = (f'<nav><a href="{prefix}index.html">首页</a> · '
-           f'<a href="{prefix}methodology.html">方法论</a> · '
-           f'<a href="{prefix}{nav_weekly}">周报</a> · '
-           f'<a href="{prefix}{nav_single}">个股报告</a></nav>')
+def _fmt_date(s: str) -> str:
+    if re.fullmatch(r"20\d{6}", s):
+        return f"{s[:4]}-{s[4:6]}-{s[6:]}"
+    return s
+
+
+def weekly_label(stem: str) -> str:
+    m = re.search(r"(20\d{2}-\d{2}-\d{2}|20\d{6})", stem)
+    return f"{_fmt_date(m.group(1))} 周报" if m else stem
+
+
+def single_label(stem: str) -> str:
+    m = re.match(r"^(.+?)_银行个股报告_(20\d{6})$", stem)
+    return f"{m.group(1)}（{_fmt_date(m.group(2))}）" if m else stem
+
+
+def build_toc(headings: list) -> str:
+    """本页目录：h2 一级、h3 缩进（h1 为页标题不入目录，h4+ 忽略）。"""
+    items = []
+    for lv, txt, hid in headings:
+        if lv == 2:
+            items.append(f'<li class="lv2"><a href="#{hid}">{html.escape(strip_internal(txt), quote=False)}</a></li>')
+        elif lv == 3:
+            items.append(f'<li class="lv3"><a href="#{hid}">{html.escape(strip_internal(txt), quote=False)}</a></li>')
+    if not items:
+        return ""
+    return f'<ul class="sb-list toc">{"".join(items)}</ul>'
+
+
+def sidebar_html(prefix: str, toc_html: str, weekly_items: list, single_items: list,
+                 current: str) -> str:
+    """左侧栏：站内导航 + 本页目录 + 周报归档 + 个股报告（当前页高亮）。
+
+    items 为 (相对站点根的 href, 标签) 列表，prefix 为当前页相对站点根的前缀。
+    """
+
+    def li(href: str, label: str) -> str:
+        cls = ' class="current"' if current and href == current else ""
+        return (f'<li class="lv2"><a{cls} href="{prefix}{href}">'
+                f"{html.escape(label, quote=False)}</a></li>")
+
+    parts = ['<div class="sb-title">站内导航</div><ul class="sb-list">',
+             li("index.html", "首页"), li("methodology.html", "方法论"), "</ul>"]
+    if toc_html:
+        parts += ['<div class="sb-title">本页目录</div>', toc_html]
+    if weekly_items:
+        parts += ['<div class="sb-title">周报归档</div><ul class="sb-list">']
+        parts += [li(h, lab) for h, lab in weekly_items]
+        parts.append("</ul>")
+    if single_items:
+        parts += ['<div class="sb-title">个股报告</div><ul class="sb-list">']
+        parts += [li(h, lab) for h, lab in single_items]
+        parts.append("</ul>")
+    return f'<aside class="sidebar" id="sidebar">{"".join(parts)}</aside>'
+
+
+def page(title: str, body: str, toc_html: str, prefix: str, weekly_items: list,
+         single_items: list, current: str, gen_time: str) -> str:
+    topbar = ('<header class="topbar"><button id="navToggle" class="nav-toggle" '
+              'aria-label="展开或收起侧栏">☰</button>'
+              '<span class="brand">银行板块研究</span></header>')
+    sidebar = sidebar_html(prefix, toc_html, weekly_items, single_items, current)
+    backdrop = '<div class="sb-backdrop" id="sbBackdrop"></div>'
     footer = (f"<footer>生成时间：{html.escape(gen_time)} ｜ 个人研究用途，数据来自公开接口，"
               f"不构成投资建议</footer>")
     return (f"<!DOCTYPE html>\n<html lang=\"zh-CN\">\n<head>\n<meta charset=\"utf-8\">\n"
             f"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
             f"<title>{html.escape(title)}</title>\n<style>{CSS}</style>\n</head>\n<body>\n"
-            f"{nav}\n<main>\n{body}\n</main>\n{footer}\n</body>\n</html>\n")
+            f"{topbar}\n{sidebar}\n{backdrop}\n<main>\n{body}\n</main>\n{footer}\n"
+            f"<script>{JS}</script>\n</body>\n</html>\n")
 
 
 def write_atomic(path: Path, text: str) -> None:
@@ -325,14 +453,8 @@ def main() -> None:
     singles = collect(single_dir, "*.md") if single_dir.exists() else []
     gen_time = datetime.now().isoformat(timespec="seconds")
 
-    def w_link(f: Path) -> str:  # 根目录视角的周报链接
-        return f"reports/weekly/{f.stem}.html"
-
-    def s_link(f: Path) -> str:
-        return f"reports/single/{f.stem}.html"
-
-    nav_weekly = w_link(weeklies[0]) if weeklies else "#"
-    nav_single = s_link(singles[0]) if singles else "#"
+    weekly_items = [(f"reports/weekly/{w.stem}.html", weekly_label(w.stem)) for w in weeklies]
+    single_items = [(f"reports/single/{s.stem}.html", single_label(s.stem)) for s in singles]
 
     written = []
 
@@ -340,28 +462,32 @@ def main() -> None:
     for w in weeklies:
         out = site_dir / "reports" / "weekly" / f"{w.stem}.html"
         text = w.read_text(encoding="utf-8")
-        body = md_to_html(text)
-        write_atomic(out, page(md_title(text, w.stem), body, "../../", nav_weekly,
-                               nav_single, gen_time))
+        body, heads = md_to_html(text)
+        write_atomic(out, page(md_title(text, w.stem), body, build_toc(heads), "../../",
+                               weekly_items, single_items,
+                               f"reports/weekly/{w.stem}.html", gen_time))
         written.append(out)
     for s in singles:
         out = site_dir / "reports" / "single" / f"{s.stem}.html"
         text = s.read_text(encoding="utf-8")
-        body = md_to_html(text)
-        write_atomic(out, page(md_title(text, s.stem), body, "../../", nav_weekly,
-                               nav_single, gen_time))
+        body, heads = md_to_html(text)
+        write_atomic(out, page(md_title(text, s.stem), body, build_toc(heads), "../../",
+                               weekly_items, single_items,
+                               f"reports/single/{s.stem}.html", gen_time))
         written.append(out)
 
     # 首页与方法论（深度 0 前缀 ""）
     index_md = build_index_md(weeklies, singles)
+    index_body, index_heads = md_to_html(index_md)
     index_out = site_dir / "index.html"
-    write_atomic(index_out, page("银行板块研究 · 首页", md_to_html(index_md), "",
-                                 nav_weekly, nav_single, gen_time))
+    write_atomic(index_out, page("银行板块研究 · 首页", index_body, build_toc(index_heads), "",
+                                 weekly_items, single_items, "", gen_time))
     written.append(index_out)
 
+    meth_body, meth_heads = md_to_html(METHODOLOGY_MD)
     meth_out = site_dir / "methodology.html"
-    write_atomic(meth_out, page("研究方法与数据口径", md_to_html(METHODOLOGY_MD), "",
-                                nav_weekly, nav_single, gen_time))
+    write_atomic(meth_out, page("研究方法与数据口径", meth_body, build_toc(meth_heads), "",
+                                weekly_items, single_items, "", gen_time))
     written.append(meth_out)
 
     print(f"站点已生成: {site_dir}")

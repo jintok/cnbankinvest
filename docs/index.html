@@ -6,14 +6,30 @@
 <title>银行板块研究 · 首页</title>
 <style>
 * { box-sizing: border-box; }
-body { background:#0d1117; color:#c9d1d9; margin:0; font-family:-apple-system,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif; line-height:1.65; }
-nav { background:#161b22; border-bottom:1px solid #30363d; padding:12px 20px; font-size:15px; }
-nav a { color:#58a6ff; text-decoration:none; margin-right:18px; }
-nav a:hover { text-decoration:underline; }
+html { scroll-behavior: smooth; }
+body { background:#0d1117; color:#c9d1d9; margin:0; padding-top:48px; font-family:-apple-system,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif; line-height:1.65; transition:padding-left .25s ease; }
+.topbar { position:fixed; top:0; left:0; right:0; z-index:30; height:48px; display:flex; align-items:center; gap:12px; background:#161b22; border-bottom:1px solid #30363d; padding:0 14px; }
+.topbar .brand { color:#e6edf3; font-weight:600; font-size:15px; }
+.nav-toggle { width:34px; height:32px; background:#0d1117; border:1px solid #30363d; border-radius:6px; color:#58a6ff; font-size:15px; line-height:1; cursor:pointer; }
+.nav-toggle:hover { background:#21262d; }
+.sidebar { position:fixed; top:48px; bottom:0; left:0; width:280px; z-index:40; overflow-y:auto; overscroll-behavior:contain; background:#0d1117; border-right:1px solid #30363d; padding:2px 12px 40px; transform:translateX(-100%); transition:transform .25s ease; }
+body.nav-open .sidebar { transform:none; }
+.sb-backdrop { display:none; position:fixed; top:48px; left:0; right:0; bottom:0; z-index:35; background:rgba(1,4,9,.6); }
+.sb-title { color:#8b949e; font-size:12px; margin:18px 4px 6px; }
+.sb-list { list-style:none; margin:0; padding:0; }
+.sb-list li { margin:1px 0; }
+.sb-list a { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#58a6ff; text-decoration:none; font-size:14px; padding:4px 8px; border-radius:6px; border-left:2px solid transparent; }
+.sb-list a:hover { background:#161b22; text-decoration:none; }
+.sb-list a.current { color:#e6edf3; background:#161b22; border-left-color:#58a6ff; }
+.toc a.active { color:#e6edf3; background:#161b22; border-left-color:#f0883e; }
+.toc li.lv3 { padding-left:16px; }
+.toc li.lv3 a { font-size:13px; }
+@media (min-width:900px) { body.nav-open { padding-left:280px; } }
+@media (max-width:899.98px) { body.nav-open .sb-backdrop { display:block; } }
 main { max-width:960px; margin:0 auto; padding:24px 20px 60px; }
 h1 { border-bottom:1px solid #30363d; padding-bottom:10px; font-size:26px; }
-h2 { border-bottom:1px solid #21262d; padding-bottom:6px; margin-top:36px; font-size:21px; }
-h3 { font-size:17px; color:#c9d1d9; }
+h2 { border-bottom:1px solid #21262d; padding-bottom:6px; margin-top:36px; font-size:21px; scroll-margin-top:64px; }
+h3 { font-size:17px; color:#c9d1d9; scroll-margin-top:64px; }
 a { color:#58a6ff; }
 strong { color:#e6edf3; }
 code { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:2px 6px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:0.9em; }
@@ -29,23 +45,68 @@ footer { border-top:1px solid #30363d; color:#8b949e; font-size:13px; text-align
 </style>
 </head>
 <body>
-<nav><a href="index.html">首页</a> · <a href="methodology.html">方法论</a> · <a href="reports/weekly/bank_weekly_2026-09-25.html">周报</a> · <a href="reports/single/招商银行_银行个股报告_20260925.html">个股报告</a></nav>
+<header class="topbar"><button id="navToggle" class="nav-toggle" aria-label="展开或收起侧栏">☰</button><span class="brand">银行板块研究</span></header>
+<aside class="sidebar" id="sidebar"><div class="sb-title">站内导航</div><ul class="sb-list"><li class="lv2"><a href="index.html">首页</a></li><li class="lv2"><a href="methodology.html">方法论</a></li></ul><div class="sb-title">本页目录</div><ul class="sb-list toc"><li class="lv2"><a href="#toc-0">项目简介</a></li><li class="lv2"><a href="#toc-1">方法论摘要</a></li><li class="lv2"><a href="#toc-2">最新周报</a></li><li class="lv2"><a href="#toc-3">周报归档</a></li><li class="lv2"><a href="#toc-4">个股报告</a></li></ul><div class="sb-title">周报归档</div><ul class="sb-list"><li class="lv2"><a href="reports/weekly/bank_weekly_2026-09-25.html">2026-09-25 周报</a></li></ul><div class="sb-title">个股报告</div><ul class="sb-list"><li class="lv2"><a href="reports/single/招商银行_银行个股报告_20260925.html">招商银行（2026-09-25）</a></li></ul></aside>
+<div class="sb-backdrop" id="sbBackdrop"></div>
 <main>
-<h2>项目简介</h2>
+<h2 id="toc-0">项目简介</h2>
 <p>银行业周度研究：覆盖 12 家上市银行（A股 + 其中 7 家 H股）与 5 个基准指数，每周产出<br>
 <strong>板块周报</strong>（正文 3 分钟决策摘要 + 附录明细）与<strong>单只个股报告</strong>，并跟踪<br>
 <strong>A/H 因子</strong>（中证银行AH价格优选指数 931039 对比中证银行 399986 + 7 家 A+H 溢价率 +<br>
 南向资金）。数据全部由 akshare 公开接口自动拉取，手工台账补充监管指标。</p>
-<h2>方法论摘要</h2>
+<h2 id="toc-1">方法论摘要</h2>
 <ul><li>标的池：12 家银行（国有大行/股份行/城商行）+ 沪深300、中证银行、申万银行、中证红利、中证银行AH优选 5 指数。</li><li>数据源：新浪/中证指数/申万/中债/同花顺为主源，东财 datacenter-web（估值/公告）带重试，行情接口在部分网络环境下不可用、不用。</li><li>报告结构：正文（速览/变化/观点初稿/AH 因子/事件/基本面摘要）供快速决策，附录承载全部个股明细。</li><li>估值体系：PB/PE-TTM（东财）+ 股息率 TTM（近 365 天分红自算）− 10Y 国债利差及历史分位。</li><li>台账：营收/净利/ROE 自动（同花顺），净息差/不良率/拨备等监管指标手工维护并生成「本周待办」。</li><li>口径与限制详见 <a href="methodology.html">方法论</a>。</li></ul>
-<h2>最新周报</h2>
+<h2 id="toc-2">最新周报</h2>
 <ul><li><strong><a href="reports/weekly/bank_weekly_2026-09-25.html">银行板块周报（2026-09-25）</a></strong> — 2026-09-25 ｜ 正文 3 分钟摘要 + 附录明细</li></ul>
-<h2>周报归档</h2>
+<h2 id="toc-3">周报归档</h2>
 <ul><li><a href="reports/weekly/bank_weekly_2026-09-25.html">银行板块周报（2026-09-25）</a></li></ul>
-<h2>个股报告</h2>
+<h2 id="toc-4">个股报告</h2>
 <ul><li><a href="reports/single/招商银行_银行个股报告_20260925.html">招商银行（A股 600036 / H股 03968）个股研究报告</a></li></ul>
 <blockquote><strong>免责声明</strong>：本站点为个人研究记录，所有内容基于公开数据接口自动生成，可能存在延迟、缺漏或口径偏差，不构成任何投资建议。</blockquote>
 </main>
-<footer>生成时间：2026-09-27T21:43:32 ｜ 个人研究用途，数据来自公开接口，不构成投资建议</footer>
+<footer>生成时间：2026-09-27T21:56:22 ｜ 个人研究用途，数据来自公开接口，不构成投资建议</footer>
+<script>
+(function () {
+  var KEY = 'cnbi-sidebar-open';
+  var body = document.body;
+  var wide = window.matchMedia('(min-width: 900px)');
+  var saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) {}
+  if (saved === '1') { body.classList.add('nav-open'); }
+  else if (saved === '0') { body.classList.remove('nav-open'); }
+  else if (wide.matches) { body.classList.add('nav-open'); }
+  function save() {
+    try { localStorage.setItem(KEY, body.classList.contains('nav-open') ? '1' : '0'); } catch (e) {}
+  }
+  document.getElementById('navToggle').addEventListener('click', function () {
+    body.classList.toggle('nav-open'); save();
+  });
+  var backdrop = document.getElementById('sbBackdrop');
+  if (backdrop) {
+    backdrop.addEventListener('click', function () { body.classList.remove('nav-open'); save(); });
+  }
+  var sidebar = document.getElementById('sidebar');
+  if (sidebar) {
+    sidebar.addEventListener('click', function (e) {
+      if (e.target.closest('a') && !wide.matches) { body.classList.remove('nav-open'); save(); }
+    });
+  }
+  var map = {};
+  document.querySelectorAll('.toc a').forEach(function (a) {
+    map[a.getAttribute('href').slice(1)] = a;
+  });
+  var heads = Object.keys(map).map(function (id) {
+    return document.getElementById(id);
+  }).filter(Boolean);
+  if (!heads.length) { return; }
+  function spy() {
+    var y = window.scrollY + 96, cur = '';
+    heads.forEach(function (h) { if (h.offsetTop <= y) { cur = h.id; } });
+    Object.keys(map).forEach(function (id) { map[id].classList.toggle('active', id === cur); });
+  }
+  window.addEventListener('scroll', spy, { passive: true });
+  spy();
+})();
+</script>
 </body>
 </html>
