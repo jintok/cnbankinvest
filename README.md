@@ -15,32 +15,39 @@
 | 城商行（3） | 宁波 002142 · 江苏 600919 · 成都 601838 |
 | 指数（5） | 沪深300 000300（基准）· 中证银行 399986 · 申万银行 801780 · 中证红利 000922（红利风格）· **中证银行AH优选 931039**（A/H 因子，每月切换至 A/H 便宜侧） |
 
+## 环境搭建
+
+```bash
+uv sync                # 按 uv.lock 创建 .venv 并安装依赖（akshare + pandas）
+uv pip install -e .    # 以可编辑方式安装 src/cnbankinvest 包（python -m 调用需要）
+```
+
 ## 每周工作流
 
 ```bash
-./refresh_weekly.sh                 # 周五收盘后运行；或 --date 2026-09-25 复现指定周五
+scripts/refresh_weekly.sh          # 周五收盘后运行；或 --date 2026-09-25 复现指定周五
 ```
 
 脚本依次执行（单步失败不中断，后续步骤用已有缓存）：
 
-1. `data_puller.py` → `data/market_YYYY-MM-DD.json`（行情/资金/利率快照）
-2. `news_puller.py` → `data/news_YYYY-MM-DD.json`（银行快讯 + watchlist 公告）
-3. `fin_report_analysis.py` → `data/fundamentals_YYYY-MM-DD.json`（基本面自动部分 + 人工台账合并）
-4. `gen_weekly_report.py` → `weekly/bank_weekly_YYYY-MM-DD.md`（周报）
+1. `data_puller` → `data/market_YYYY-MM-DD.json`（行情/资金/利率快照）
+2. `news_puller` → `data/news_YYYY-MM-DD.json`（银行快讯 + watchlist 公告）
+3. `fin_report_analysis` → `data/fundamentals_YYYY-MM-DD.json`（基本面自动部分 + 人工台账合并）
+4. `gen_weekly_report` → `output/weekly/bank_weekly_YYYY-MM-DD.md`（周报）
 
-然后：打开 `weekly/` 下最新报告，按文末「人工待办清单」完成
+然后：打开 `output/weekly/` 下最新报告，按文末「人工待办清单」完成
 **核心观点 / 观点初稿修订 / 下周关注补充**，并填报台账（见下）。
 
 **周报结构（正文 + 附录）**：正文（一~九节）是 3 分钟决策摘要——核心观点、一周速览
 （指数表+资金/利率/AH/利差一行统计）、本周变化（涨跌前3后3等 WoW 亮点）、观点初稿
 （短/长期各 ≤4 条）、A/H 因子、事件头条、基本面摘要统计、下周关注、风险提示；
 个股明细一律在文末「附录（附1 行情估值 / 附2 基本面台账 / 附3 公告快讯 / 附4 监管指标与待办）」。
-个股深度分析见 `single/` 单只个股报告。
+个股深度分析见 `output/single/` 单只个股报告。
 
 
 ## GitHub Pages 站点
 
-`refresh_weekly.sh` 第 5 步自动生成静态站点到 `docs/`（暗色主题、零外部依赖、可离线打开）：
+`scripts/refresh_weekly.sh` 第 5 步自动读取 `output/weekly/`、`output/single/`，生成静态站点到 `docs/`（暗色主题、零外部依赖、可离线打开）：
 首页 `docs/index.html`、方法论页、周报与个股报告的 HTML 版。发布方式：GitHub 仓库
 Settings → Pages → Source 选 `/docs`（分支 master），站点地址为
 `https://<user>.github.io/cnbankinvest/`。本地预览直接浏览器打开 `docs/index.html` 即可。
@@ -84,9 +91,13 @@ A 股侧走强（溢价收敛）。溢价汇总与南向资金周净流向并列
   填 `report`（最新披露期）/`nim_pct`/`npl_ratio_pct`/`provision_coverage_pct`/
   `cet1_pct`（核心一级）/`payout_ratio_pct`（分红率）。
 
-`fin_report_analysis.py` 每次运行会把这两个文件合并进 `fundamentals_*.json` 的
+`fin_report_analysis` 每次运行会把这两个文件合并进 `fundamentals_*.json` 的
 `curated` / `industry_regulatory` 字段，并在 `meta.curated_gaps` 列出仍缺的项目；
-`gen_weekly_report.py` 将其渲染为报告第七节的「本周待办」清单。
+`gen_weekly_report` 将其渲染为报告第七节的「本周待办」清单。
+
+**入库策略**：`output/`（周报/个股报告/人工新闻笔记/观点博客）与 `docs/`（站点）入库；
+`data/` 下原始快照（`market_*`/`news_*`/`fundamentals_*`/`hist/`）可按需重拉、已 gitignore——
+只有手工台账与 `spread_history.json`（汇总序列）入库。
 
 ## 已知限制
 
@@ -108,28 +119,35 @@ A 股侧走强（溢价收敛）。溢价汇总与南向资金周净流向并列
 
 ```
 cnbankinvest/               # 本仓库即原 finance 仓库 bank/ 模块的独立迁移版
-├── watchlist.json            # 12 银行 + 4 指数（本模块唯一标的源）
-├── refresh_weekly.sh         # 一键刷新入口
-├── data_puller.py            # 行情快照 → data/market_*.json
-├── news_puller.py            # 新闻公告 → data/news_*.json
-├── fin_report_analysis.py    # 基本面分析 → data/fundamentals_*.json
-├── gen_weekly_report.py      # 周报生成 → weekly/bank_weekly_*.md
-├── gen_single_report.py      # 个股报告生成 → single/{名称}_银行个股报告_*.md
-├── templates/weekly_template.md
-├── templates/single_bank_template.md
+├── watchlist.json            # 12 银行 + 指数（本模块唯一标的源）
+├── pyproject.toml            # 包定义（src/cnbankinvest，依赖 akshare + pandas）
+├── uv.lock                   # 锁定依赖版本
+├── scripts/
+│   └── refresh_weekly.sh     # 一键刷新入口（python -m 调用包内模块）
+├── src/cnbankinvest/         # 全部代码（可编辑安装）
+│   ├── paths.py              # 仓库级路径约定（data/ output/ docs/ 唯一来源）
+│   ├── data_puller.py        # 行情快照 → data/market_*.json
+│   ├── news_puller.py        # 新闻公告 → data/news_*.json
+│   ├── fin_report_analysis.py# 基本面分析 → data/fundamentals_*.json
+│   ├── gen_weekly_report.py  # 周报生成 → output/weekly/*.md
+│   ├── gen_single_report.py  # 个股报告 → output/single/*.md
+│   ├── gen_site.py           # 静态站点 → docs/
+│   ├── templates/            # 周报/个股报告模板（随包内走）
+│   └── probes/               # akshare 接口探针（历史，含 probe_results.json）
+├── data/                     # 大部分 gitignore（可按需重拉）
+│   ├── regulatory_indicators.json  # 手工：行业监管指标（入库）
+│   ├── bank_fundamentals.json      # 手工：个股专项指标（入库）
+│   ├── spread_history.json         # 核心池股息率-10Y利差序列（入库）
+│   ├── market_*.json / news_*.json / fundamentals_*.json   # 周快照（gitignore）
+│   └── hist/                 # 日线收盘缓存（增量合并，gitignore）
+├── output/                   # 有留存价值的产出（全部入库）
+│   ├── weekly/               # 生成的周报 Markdown
+│   ├── single/               # 生成的个股报告 Markdown
+│   ├── news/                 # 人工整理的新闻/事件笔记
+│   └── blog/                 # 人工观点文章
+├── docs/                     # 生成的静态站点（GitHub Pages Source=/docs）
 ├── INTERFACE_NOTES.md        # akshare 接口实测笔记（数据源选型依据）
-├── probe_interfaces.py       # 接口探针（历史）
-├── probe_round2.py
-├── data/
-│   ├── market_*.json         # 行情快照（每周一份）
-│   ├── news_*.json           # 新闻公告（每周一份）
-│   ├── fundamentals_*.json   # 基本面台账（每周一份）
-│   ├── hist/                 # 日线收盘缓存（增量合并）
-│   ├── spread_history.json   # 核心池股息率-10Y利差序列（自动生成）
-│   ├── regulatory_indicators.json  # 手工：行业监管指标
-│   └── bank_fundamentals.json      # 手工：个股专项指标
-└── weekly/                   # 生成的周报 Markdown
-└── single/                   # 生成的个股报告 Markdown
+├── README.md / AGENTS.md / LICENSE (MIT)
 ```
 
 
@@ -140,10 +158,10 @@ cnbankinvest/               # 本仓库即原 finance 仓库 bank/ 模块的独�
 针对单家银行的建议/研究报告，与周报共用同一份数据快照（market/news/fundamentals JSON），生成后人工修订观点部分。
 
 ```sh
-.venv/bin/python gen_single_report.py --code 600036 [--date 2026-09-25]
-# 输出: single/招商银行_银行个股报告_20260925.md
+.venv/bin/python -m cnbankinvest.gen_single_report --code 600036 [--date 2026-09-25]
+# 输出: output/single/招商银行_银行个股报告_20260925.md
 ```
 
 - 八节结构：投资结论与建议（短期 1–4 周 / 长期 6–24 月两个子块，自动初稿+待人工修订）→ 公司概况（人工）→ 近期行情与市场表现 → 估值分析（vs 全池及同板块中位数：PB/PE-TTM/股息率/股息率−10Y利差）→ 基本面分析（报告期趋势表 + 手工台账行）→ 近期公告与舆情（按本行过滤）→ 催化剂与风险提示（人工）→ 跟踪清单（本行台账缺口 + 数据日历）。
 - 行情/估值/基本面全部自动填充；`--code` 不在 watchlist 内时报错并列出 12 家可用代码。
-- 示例：`single/招商银行_银行个股报告_20260925.md`。
+- 示例：`output/single/招商银行_银行个股报告_20260925.md`。

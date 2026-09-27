@@ -1,8 +1,8 @@
 # 银行股研究 · akshare 接口摸底笔记
 
-> 日期：2026-09-27 ｜ 环境：`bank/.venv`（uv 创建，CPython 3.14.6）｜ akshare **1.18.97** ｜ pandas 3.0.6
-> 复现方式：`bank/.venv/bin/python bank/probe_interfaces.py`（第一轮 A–N）+ `bank/probe_round2.py`（参数修正复测 + 备用源）
-> 原始探针输出：`bank/probe_results.json`
+> 日期：2026-09-27 ｜ 环境：`.venv`（uv 创建，CPython 3.14.6）｜ akshare **1.18.97** ｜ pandas 3.0.6
+> 复现方式：`.venv/bin/python src/cnbankinvest/probes/probe_interfaces.py`（第一轮 A–N）+ `src/cnbankinvest/probes/probe_round2.py`（参数修正复测 + 备用源）
+> 原始探针输出：`src/cnbankinvest/probes/probe_results.json`
 > 2026-09-27 补充：FX 与指数股息率探测（见文末「补充探测」）
 
 ## 0. 总体结论（先看这个）

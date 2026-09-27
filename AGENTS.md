@@ -7,36 +7,39 @@
 ## Commands
 
 ```bash
-./refresh_weekly.sh                      # 一键全流程（5 步，见下）；周五收盘后运行
-./refresh_weekly.sh --date 2026-09-25   # 复现指定日期；周末运行必须显式传周五
-.venv/bin/python gen_single_report.py --code 600036 [--date ...]   # 个股报告 → single/
+uv sync && uv pip install -e .        # 环境搭建（.venv + 依赖 + 可编辑安装包）
+scripts/refresh_weekly.sh             # 一键全流程（5 步，见下）；周五收盘后运行
+scripts/refresh_weekly.sh --date 2026-09-25   # 复现指定日期；周末运行必须显式传周五
+.venv/bin/python -m cnbankinvest.gen_single_report --code 600036 [--date ...]   # 个股报告 → output/single/
 ```
 
-- 单独重跑某一步：直接 `.venv/bin/python <script>.py --date ...`（各脚本均支持 `--date`）。
-- 验证改动：用已有数据重跑生成器即可（如 `gen_weekly_report.py --date 2026-09-25`），不需要真实拉网。
+- 单独重跑某一步：`.venv/bin/python -m cnbankinvest.<模块> --date ...`（均支持 `--date`）。
+- 验证改动：用已有数据重跑生成器即可（如 `gen_weekly_report --date 2026-09-25`），不需要真实拉网。
 
 ## Environment
 
-- Python 3.14 venv 在 `.venv/`（uv 创建）；依赖只有 **akshare 1.18.97 + pandas 3.0.6**。
-- **仓库没有 requirements/pyproject**，`.venv` 已 gitignore——重建环境需手动 `uv venv && uv pip install akshare pandas`。
+- 代码在 `src/cnbankinvest/`（可编辑安装，`python -m cnbankinvest.<模块>` 调用）；Python 3.14 venv 在 `.venv/`（uv 管理，依赖锁定在 `uv.lock`）。
+- 依赖只有 **akshare 1.18.97 + pandas 3.0.6**（pyproject 精确锁版）。
 
-## Pipeline（refresh_weekly.sh 的 5 步，顺序固定）
+## Pipeline（scripts/refresh_weekly.sh 的 5 步，顺序固定）
 
-1. `data_puller.py` → `data/market_*.json`
-2. `news_puller.py` → `data/news_*.json`
-3. `fin_report_analysis.py` → `data/fundamentals_*.json`（合并手工台账）
-4. `gen_weekly_report.py` → `weekly/bank_weekly_*.md`
-5. `gen_site.py` → `docs/`（GitHub Pages 静态站，Source=/docs）
+1. `data_puller` → `data/market_*.json`
+2. `news_puller` → `data/news_*.json`
+3. `fin_report_analysis` → `data/fundamentals_*.json`（合并手工台账）
+4. `gen_weekly_report` → `output/weekly/bank_weekly_*.md`
+5. `gen_site` → `docs/`（GitHub Pages 静态站，Source=/docs）
 
 关键语义：**单步失败不中断**——每步只读 `data/` 下 ≤ `--date` 的最新缓存，生成器与拉数解耦。`--date` 由 shell 原样传给全部脚本，各脚本只取自己认识的参数。
 
 ## Architecture
 
+- `src/cnbankinvest/paths.py` — 仓库级路径约定（data/output/docs/watchlist）唯一来源，新模块从这里 import，不要自算相对路径。
 - `watchlist.json` — 标的唯一来源（12 银行 + 指数），所有脚本从这里读，不要硬编码代码。
-- `data/hist/*.json` — 日线收盘增量缓存，**tmp+replace 原子写**，沿用此约定。
+- `output/` — 有留存价值、**入库**的产出：`weekly/`（周报）、`single/`（个股报告）、`news/`（人工新闻笔记）、`blog/`（人工观点文章）。
+- `data/` — 原始快照（`market_*`/`news_*`/`fundamentals_*`/`hist/`）已 gitignore（可按需重拉）；`data/hist/*.json` 日线缓存为 **tmp+replace 原子写**，沿用此约定。
 - 手工维护、**脚本不得覆盖**：`data/regulatory_indicators.json`（行业监管指标）、`data/bank_fundamentals.json`（个股专项）——缺项在报告中标「待填」属正常设计。
-- `templates/` — 周报/个股报告模板；`INTERFACE_NOTES.md` — akshare 接口实测笔记，**改数据源前必读**。
-- `gen_site.py` 为纯标准库 Markdown 渲染器（无外部依赖、可离线），会把【待人工撰写】等内部标记剥除后再出网页版。
+- `src/cnbankinvest/templates/` — 周报/个股报告模板（随包内走）；`INTERFACE_NOTES.md` — akshare 接口实测笔记，**改数据源前必读**。
+- `gen_site` 为纯标准库 Markdown 渲染器（无外部依赖、可离线），读 `output/weekly|single`，把【待人工撰写】等内部标记剥除后出网页版。
 
 ## Network gotchas（实测结论，勿凭直觉换接口）
 
@@ -48,3 +51,4 @@
 
 - 全部输出（报告、注释、日志）为中文；报告中的核心观点等人工段落以【待人工撰写】标记，由人完成后删除标记。
 - 改动验证方式：重跑生成器 + 人工核对输出 Markdown；无自动化测试。
+- 远端为 GitHub `jintok/cnbankinvest`（public，Pages Source=/docs）；分支 `main`。

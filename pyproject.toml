@@ -1,0 +1,19 @@
+[project]
+name = "cnbankinvest"
+version = "0.1.0"
+description = "中国银行板块投研周报系统：akshare 拉数 → Markdown 周报/个股报告 → GitHub Pages 静态站"
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "jintok" }]
+requires-python = ">=3.14"
+dependencies = [
+    "akshare==1.18.97",
+    "pandas==3.0.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cnbankinvest"]
