@@ -11,5 +11,11 @@ data/fin_indicators_*.json
 data/hist/
 data/reports/
 
+# 凭证/机密
+.env
+.env.*
+*.pem
+*.key
+
 # Misc
 .DS_Store

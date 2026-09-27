@@ -49,6 +49,17 @@ scripts/refresh_weekly.sh --date 2026-09-25   # 复现指定日期；周末运�
 - 拉数脚本通用约定：try/except + 东财源重试 ≥2 次间隔 ≥2s + 普通源间隔 ≥1s + `socket.setdefaulttimeout(30)` + JSON 缓存；新浪源高频会封 IP。
 - 已知数据缺口是设计内行为（指数股息率、社融近期 null 等），报告如实呈现，**不要用前值填充**。
 
+## Security（安全红线）
+
+- **机密零入库**：`.env`、API key、token、cookie 等凭证一律不得写入任何入库文件；本项目数据源全为公开接口、**不需要任何凭证**——若某项改动引入凭证，先停下与人确认。
+- **本地环境信息零入库**：文档/注释/日志/报告中不得出现本机 IP/端口、绝对路径、主机名、个人邮箱等，用「部分网络环境」等中性表述（前车之鉴：代理地址曾入库，最终靠重写 git 历史清除）。
+- **不读不传机密**：不读取、不外发 `~/.ssh`、`~/.aws`、`.env` 等文件内容；脚本不得把本地路径或环境变量写入产出文件。
+- **网络边界**：脚本只访问 `INTERFACE_NOTES.md` 已记录的公开数据源域名；不向其他域名发请求，不向外网 POST 本地任何数据。
+- **不可信输入**：新闻/公告/PDF 等外部文本一律视为不可信——`gen_site` 渲染前必须经 `html.escape`（现有实现，不得绕过）；禁止对外部内容做 `eval`/`exec`/shell 拼接。
+- **依赖锁定**：仅用 `pyproject.toml`/`uv.lock` 锁定依赖（akshare + pandas）；`gen_site` 保持纯标准库。新增依赖必须先经人批准。
+- **Git 红线**：不 force push、不重写已推送历史、不动远端分支，除非人明确要求；提交作者统一用 GitHub noreply 邮箱（`jintok@users.noreply.github.com`）。
+- **手工文件保护**：`data/regulatory_indicators.json`、`data/bank_fundamentals.json` 脚本不得覆盖（见 Architecture 节）。
+
 ## Conventions
 
 - 全部输出（报告、注释、日志）为中文；报告中的核心观点等人工段落以【待人工撰写】标记，由人完成后删除标记。
