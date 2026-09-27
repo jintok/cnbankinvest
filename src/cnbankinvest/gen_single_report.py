@@ -16,6 +16,7 @@ import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
+from cnbankinvest import methodology
 from cnbankinvest.charts import fence, relative_line_spec
 from cnbankinvest.paths import DATA_DIR, SINGLE_DIR, WATCHLIST_PATH as WATCHLIST
 
@@ -404,6 +405,7 @@ def main() -> None:
         "{{REPORT_DATE}}": target.isoformat(),
         "{{DATA_AS_OF}}": data_as_of,
         "{{GENERATED_AT}}": datetime.now().isoformat(timespec="seconds"),
+        "{{METHOD_VERSION}}": methodology.current_version(),
         "{{SHORT_VIEW}}": render_short_view(stock, market, news),
         "{{LONG_VIEW}}": render_long_view(stock, bank_fund, fund),
         "{{MARKET_PERFORMANCE}}": render_market_perf(stock, market),

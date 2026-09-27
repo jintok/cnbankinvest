@@ -34,6 +34,7 @@ a { color:#58a6ff; }
 strong { color:#e6edf3; }
 code { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:2px 6px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:0.9em; }
 blockquote { background:#161b22; border-left:4px solid #30363d; margin:12px 0; padding:8px 16px; color:#8b949e; }
+blockquote.fine { background:none; border-left-color:#21262d; font-size:12px; color:#8b949e; padding:4px 12px; }
 table { border-collapse:collapse; margin:14px 0; width:100%; font-size:14px; }
 th, td { border:1px solid #30363d; padding:7px 12px; text-align:left; }
 th { background:#161b22; color:#e6edf3; white-space:nowrap; }
@@ -53,7 +54,9 @@ footer { border-top:1px solid #30363d; color:#8b949e; font-size:13px; text-align
 <aside class="sidebar" id="sidebar"><div class="sb-title">站内导航</div><ul class="sb-list"><li class="lv2"><a href="index.html">首页</a></li><li class="lv2"><a href="methodology.html">方法论</a></li></ul><div class="sb-title">本页目录</div><ul class="sb-list toc"><li class="lv2"><a href="#toc-1">研究范围</a></li><li class="lv2"><a href="#toc-2">周报结构</a></li><li class="lv2"><a href="#toc-3">指标口径</a></li><li class="lv2"><a href="#toc-4">数据源与可用性</a></li><li class="lv2"><a href="#toc-5">手工维护台账</a></li><li class="lv2"><a href="#toc-6">已知限制</a></li></ul><div class="sb-title">周报归档</div><ul class="sb-list"><li class="lv2"><a href="reports/weekly/bank_weekly_2026-09-25.html">2026-09-25 周报</a></li></ul><div class="sb-title">个股报告</div><ul class="sb-list"><li class="lv2"><a href="reports/single/招商银行_银行个股报告_20260925.html">招商银行（2026-09-25）</a></li></ul></aside>
 <div class="sb-backdrop" id="sbBackdrop"></div>
 <main>
-<h1 id="toc-0">研究方法与数据口径</h1>
+<h1 id="toc-0">研究方法与数据口径（v20260927）</h1>
+<blockquote>版本：v20260927 ｜ 生效日期：2026-09-27<br>
+变更说明：初始版本，自 gen_site.py 内联 METHODOLOGY_MD 迁移，无口径变更。</blockquote>
 <h2 id="toc-1">研究范围</h2>
 <ul><li><strong>覆盖标的池</strong>：12 家上市银行（国有大行 6：工农中建交邮储；股份行 3：招商/兴业/平安；城商行 3：宁波/江苏/成都），其中 7 家为 A+H 双重上市。</li><li><strong>基准指数</strong>：沪深300（000300，基准）、中证银行（399986）、申万银行（801780）、中证红利（000922，红利风格）、中证银行AH价格优选（931039，A/H 因子）。</li><li><strong>产出</strong>：每周板块周报（正文 3 分钟决策摘要 + 附录明细）与单只个股深度报告。</li></ul>
 <h2 id="toc-2">周报结构</h2>
@@ -67,7 +70,7 @@ footer { border-top:1px solid #30363d; color:#8b949e; font-size:13px; text-align
 <h2 id="toc-6">已知限制</h2>
 <ul><li>快讯仅 24–48 小时覆盖，周度事件以公告补齐；财联社接口无 URL。</li><li>指数级股息率不可得（akshare 无对应接口），指数股息率字段固定为空。</li><li>akshare 无商业银行净息差/不良率自动数据源，仅能手工维护。</li><li>南向资金周合计为近 5 个交易日口径（非自然周）。</li><li>10Y 国债取值需过滤「中债国债收益率曲线」（同接口另返回中短期票据/商业银行普通债曲线）。</li></ul>
 </main>
-<footer>生成时间：2026-09-27T22:13:18 ｜ 个人研究用途，数据来自公开接口，不构成投资建议</footer>
+<footer>生成时间：2026-09-27T22:46:51 ｜ 个人研究用途，数据来自公开接口，不构成投资建议</footer>
 <script>
 (function () {
   var KEY = 'cnbi-sidebar-open';

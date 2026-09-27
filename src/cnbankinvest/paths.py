@@ -19,3 +19,4 @@ NEWS_NOTES_DIR = OUTPUT_DIR / "news"              # 人工整理的新闻/事件
 BLOG_DIR = OUTPUT_DIR / "blog"                    # 人工观点文章
 DOCS_DIR = ROOT_DIR / "docs"                      # GitHub Pages 静态站（Source=/docs）
 WATCHLIST_PATH = ROOT_DIR / "watchlist.json"      # 标的唯一来源
+METHODOLOGY_DIR = ROOT_DIR / "methodology"        # 方法论版本 spec（v{yyyyMMdd}.md，入库、脚本只读）

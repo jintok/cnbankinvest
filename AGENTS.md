@@ -38,11 +38,20 @@ scripts/refresh_weekly.sh --date 2026-09-25   # 复现指定日期；周末运�
 - `watchlist.json` — 标的唯一来源（12 银行 + 指数），所有脚本从这里读，不要硬编码代码。
 - `output/` — 有留存价值、**入库**的产出：`weekly/`（周报）、`single/`（个股报告）、`news/`（人工新闻笔记）、`blog/`（人工观点文章）。
 - `data/` — 原始快照（`market_*`/`news_*`/`fundamentals_*`/`hist/`）已 gitignore（可按需重拉）；`data/hist/*.json` 日线缓存为 **tmp+replace 原子写**，沿用此约定。
-- 手工维护、**脚本不得覆盖**：`data/regulatory_indicators.json`（行业监管指标，akshare 无源）、`data/bank_fundamentals.json`（个股专项的**覆盖层**，非空值优先于 `fin_indicators_*` 自动值）——缺项在报告中标「待填」属正常设计。
+- 手工维护、**脚本不得覆盖**：`data/regulatory_indicators.json`（行业监管指标，akshare 无源）、`data/bank_fundamentals.json`（个股专项的**覆盖层**，非空值优先于 `fin_indicators_*` 自动值）——缺项在报告中标「待填」属正常设计；`methodology/` 下已归档的方法论版本同样禁止修改（见「方法论版本管理」节）。
 - `src/cnbankinvest/templates/` — 周报/个股报告模板（随包内走）；`INTERFACE_NOTES.md` — akshare 接口实测笔记，**改数据源前必读**。
 - `src/cnbankinvest/charts.py` — 图表模块：生成器往 md 写 ` ```chart ` 围栏（JSON spec，构建辅助读 `data/hist/`），`gen_site` 渲染为内联 SVG（纯标准库、零 JS；解析失败降级为 JSON 代码块）。
 - 定期报告 PDF 链路：`report_fetcher`（东财公告→art_code→pdf.dfcfw.com 下载到 `data/reports/`）+ `report_extractor`（pdfplumber 锚点正则+众数，`report_anchors/{code}.json` 按行覆盖）。
-- `gen_site` 为纯标准库 Markdown 渲染器（无外部依赖、可离线），读 `output/weekly|single`，把【待人工撰写】等内部标记剥除后出网页版。
+- `gen_site` 为纯标准库 Markdown 渲染器（无外部依赖、可离线），读 `output/weekly|single` 与 `methodology/` 当前版本，把【待人工撰写】等内部标记剥除后出网页版；报告尾部「方法论版本：…」引用块渲染为小字脚注。
+
+## 方法论版本管理（方法论先行）
+
+- `methodology/v{yyyyMMdd}.md` 是投研方法论的**不可变 spec**（研究范围/报告结构/指标口径/数据源/评估与投资框架），入库留存；**当前版本 = 目录中日期最大者**（字典序即时间序），同日最多一版——同日需再改时，仅当当日版本尚未用于生成报告才允许就地修订，否则次日发新版。
+- **方法论先行**：凡改动报告结构、模板、指标口径、标的池、数据源口径，必须**先**发布新版方法论（复制最新版 → 修改 → 头部写版本号/生效日期/变更说明，逐条列与上一版差异），**再**改代码对齐；纯 bug 修复、性能、站点样式等不动口径的改动无需新版本。
+- 新版入库后旧版即**冻结**：任何修改（含笔误）只能发新版；脚本对 `methodology/` 只读不写。
+- 代码侧经 `cnbankinvest/methodology.py` 解析当前版本（`current_version()/current_text()`）；周报与个股报告尾部由生成器自动写入「方法论版本：v{yyyyMMdd} + 免责声明」。
+- `gen_site` 只把当前版本渲染为 `docs/methodology.html`，历史版本不上站、仅仓库留存。
+- 配套 skill（`.agents/skills/`，标准入口）：`cnbankinvest-new-methodology`（发新版）、`cnbankinvest-align`（按最新方法论改代码并重生成最新报告）、`cnbankinvest-check`（只读审计方法论/代码/报告一致性）。
 
 ## Network gotchas（实测结论，勿凭直觉换接口）
 

@@ -13,8 +13,9 @@
 用法：
     .venv/bin/python -m cnbankinvest.gen_site [--site-dir docs] [--weekly-dir output/weekly] [--single-dir output/single]
 
-注意：本脚本只读 output/weekly、output/single，方法论页内容以内联 MARKDOWN 维护，
-保证每次生成与最新口径同步。目录约定见 cnbankinvest.paths。
+注意：本脚本只读 output/weekly、output/single；方法论页内容读 methodology/ 下当前版本
+（v{yyyyMMdd}.md，日期最大者，见 cnbankinvest.methodology），历史版本不上站。
+目录约定见 cnbankinvest.paths。
 """
 import argparse
 import html
@@ -23,7 +24,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 
-from cnbankinvest import charts
+from cnbankinvest import charts, methodology
 from cnbankinvest.paths import DOCS_DIR, SINGLE_DIR, WEEKLY_DIR
 
 # ---------------------------------------------------------------- 渲染器支持的语法
@@ -65,6 +66,7 @@ a { color:#58a6ff; }
 strong { color:#e6edf3; }
 code { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:2px 6px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:0.9em; }
 blockquote { background:#161b22; border-left:4px solid #30363d; margin:12px 0; padding:8px 16px; color:#8b949e; }
+blockquote.fine { background:none; border-left-color:#21262d; font-size:12px; color:#8b949e; padding:4px 12px; }
 table { border-collapse:collapse; margin:14px 0; width:100%; font-size:14px; }
 th, td { border:1px solid #30363d; padding:7px 12px; text-align:left; }
 th { background:#161b22; color:#e6edf3; white-space:nowrap; }
@@ -232,7 +234,9 @@ def md_to_html(md: str) -> tuple[str, list]:
             while i < n and lines[i].startswith(">"):
                 q.append(re.sub(r"^>\s?", "", lines[i]))
                 i += 1
-            parts.append("<blockquote>" + "<br>\n".join(inline(x) for x in q) + "</blockquote>")
+            # 「方法论版本：」脚注块渲染为小字（报告尾部版本标注 + 免责声明）
+            cls = ' class="fine"' if any("方法论版本：" in x for x in q) else ""
+            parts.append(f"<blockquote{cls}>" + "<br>\n".join(inline(x) for x in q) + "</blockquote>")
             continue
         if re.match(r"^[-*]\s+", line):
             flush_para()
@@ -348,54 +352,7 @@ def md_title(md_text: str, fallback: str) -> str:
     return m.group(1).strip() if m else fallback
 
 
-# ---------------------------------------------------------------- 方法论页（内联维护）
-
-METHODOLOGY_MD = """# 研究方法与数据口径
-
-## 研究范围
-
-- **覆盖标的池**：12 家上市银行（国有大行 6：工农中建交邮储；股份行 3：招商/兴业/平安；城商行 3：宁波/江苏/成都），其中 7 家为 A+H 双重上市。
-- **基准指数**：沪深300（000300，基准）、中证银行（399986）、申万银行（801780）、中证红利（000922，红利风格）、中证银行AH价格优选（931039，A/H 因子）。
-- **产出**：每周板块周报（正文 3 分钟决策摘要 + 附录明细）与单只个股深度报告。
-
-## 周报结构
-
-- **正文（一至九节）**：核心观点（人工）、一周速览、本周变化、观点初稿（短/长期，自动）、A/H 因子、事件与政策、基本面摘要、下周关注、风险提示。
-- **附录（备查明细）**：附1 个股行情估值、附2 个股基本面台账、附3 公告与快讯、附4 行业监管指标与本周待办。
-
-## 指标口径
-
-| 指标 | 口径 |
-|---|---|
-| 周涨跌 | 最新收盘（≤数据截止日的最后交易日）对比 7 个自然日前收盘，% |
-| 年初至今 | 对比上一年最后交易日收盘，% |
-| 股息率 TTM | 近 365 天除权除息现金分红（元/10股÷10）÷ 现价，%（自算口径） |
-| 利差 | 核心池 12 家股息率中位数 − 10Y 国债收益率，pct |
-| AH 溢价 | (H股收盘价×CNY/HKD − A股收盘价) ÷ A股收盘价，负值=H股折价 |
-| 南向资金 | 港股通近 5 个交易日「当日成交净买额」合计，亿港元 |
-| PB / PE-TTM | 东财 datacenter-web 日频估值，取 ≤截止日最新一日 |
-| 营收/净利/ROE | 同花顺按报告期（累计值口径，ROE 为单季度） |
-| 净息差/不良率/拨备/资本 | 手工台账：金融监管总局季度通报 + 各银行定期报告 |
-
-## 数据源与可用性
-
-- **主源**：新浪（A/H 个股日线、汇率牌价）、中证指数官网（000300/399986/000922/931039）、申万宏源（801780）、中国债券信息网（10Y 国债）、同花顺（财务摘要）、东方财富 datacenter-web（估值/公告，带重试）。
-- **受限**：东财行情接口（push2/push2his）在部分网络环境（HTTP 代理）下不可达，不使用；新闻快讯接口仅覆盖最近 24–48 小时。
-
-## 手工维护台账
-
-- `data/regulatory_indicators.json`：行业监管指标（净息差/不良率/拨备覆盖率/资本充足率/利润同比），来源为金融监管总局季度《商业银行主要监管指标》通报。
-- `data/bank_fundamentals.json`：个股 curated 字段（净息差/不良率/拨备覆盖率/核心一级/分红率），来源为各银行定期报告。
-- 两处填报后，周报第七/附录节与「本周待办」清单自动更新。
-
-## 已知限制
-
-- 快讯仅 24–48 小时覆盖，周度事件以公告补齐；财联社接口无 URL。
-- 指数级股息率不可得（akshare 无对应接口），指数股息率字段固定为空。
-- akshare 无商业银行净息差/不良率自动数据源，仅能手工维护。
-- 南向资金周合计为近 5 个交易日口径（非自然周）。
-- 10Y 国债取值需过滤「中债国债收益率曲线」（同接口另返回中短期票据/商业银行普通债曲线）。
-"""
+# ---------------------------------------------------------------- 首页简介（方法论页内容见 methodology/ 版本文件）
 
 INDEX_INTRO = """## 项目简介
 
@@ -511,11 +468,15 @@ def main() -> None:
                                  weekly_items, single_items, "", gen_time))
     written.append(index_out)
 
-    meth_body, meth_heads = md_to_html(METHODOLOGY_MD)
-    meth_out = site_dir / "methodology.html"
-    write_atomic(meth_out, page("研究方法与数据口径", meth_body, build_toc(meth_heads), "",
-                                weekly_items, single_items, "", gen_time))
-    written.append(meth_out)
+    meth_text = methodology.current_text()
+    if meth_text is None:
+        print("警告：无方法论版本文件，跳过 methodology.html")
+    else:
+        meth_body, meth_heads = md_to_html(meth_text)
+        meth_out = site_dir / "methodology.html"
+        write_atomic(meth_out, page("研究方法与数据口径", meth_body, build_toc(meth_heads), "",
+                                    weekly_items, single_items, "", gen_time))
+        written.append(meth_out)
 
     print(f"站点已生成: {site_dir}")
     for p in written:

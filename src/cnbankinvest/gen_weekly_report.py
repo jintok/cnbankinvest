@@ -18,6 +18,7 @@ import statistics
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
+from cnbankinvest import methodology
 from cnbankinvest.charts import fence, relative_line_spec
 from cnbankinvest.paths import DATA_DIR, WEEKLY_DIR
 
@@ -622,6 +623,7 @@ def main() -> None:
         "{{REPORT_DATE}}": target.isoformat(),
         "{{DATA_AS_OF}}": data_as_of,
         "{{GENERATED_AT}}": datetime.now().isoformat(timespec="seconds"),
+        "{{METHOD_VERSION}}": methodology.current_version(),
         "{{DASHBOARD}}": render_dashboard(market, ah_stats, spread, spread_note),
         "{{WOW_CHANGES}}": render_wow(market, ah_stats),
         "{{VIEW_DRAFTS}}": render_view_drafts(market, news, fund, signals),

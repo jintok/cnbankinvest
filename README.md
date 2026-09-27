@@ -5,6 +5,9 @@
 
 > 数据全部来自 akshare 聚合的公开接口（新浪/中证/申万/中债/东财/同花顺等），
 > 接口逐一实测记录见 [`INTERFACE_NOTES.md`](INTERFACE_NOTES.md)。不构成投资建议。
+>
+> 投研方法论按版本化管理：[`methodology/`](methodology/) 下 `v{yyyyMMdd}.md` 为不可变 spec，
+> 当前版本为目录中日期最大者；改动报告口径须先发新版方法论（见 `AGENTS.md`「方法论版本管理」）。
 
 ## 覆盖标的池（watchlist.json）
 
@@ -129,6 +132,7 @@ cnbankinvest/               # 本仓库即原 finance 仓库 bank/ 模块的独�
 │   └── refresh_weekly.sh     # 一键刷新入口（python -m 调用包内模块）
 ├── src/cnbankinvest/         # 全部代码（可编辑安装）
 │   ├── paths.py              # 仓库级路径约定（data/ output/ docs/ 唯一来源）
+│   ├── methodology.py        # 方法论版本解析（methodology/ 当前版本，供生成器/站点共用）
 │   ├── data_puller.py        # 行情快照 → data/market_*.json
 │   ├── news_puller.py        # 新闻公告 → data/news_*.json
 │   ├── fin_indicators_puller.py  # 银行专项指标 → data/fin_indicators_*.json
@@ -154,6 +158,7 @@ cnbankinvest/               # 本仓库即原 finance 仓库 bank/ 模块的独�
 │   ├── news/                 # 人工整理的新闻/事件笔记
 │   └── blog/                 # 人工观点文章
 ├── docs/                     # 生成的静态站点（GitHub Pages Source=/docs）
+├── methodology/              # 投研方法论版本 spec（v{yyyyMMdd}.md，不可变、入库；当前版=日期最大者）
 ├── INTERFACE_NOTES.md        # akshare 接口实测笔记（数据源选型依据）
 ├── README.md / AGENTS.md / LICENSE (MIT)
 ```
