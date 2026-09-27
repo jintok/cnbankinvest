@@ -45,7 +45,7 @@ scripts/refresh_weekly.sh --date 2026-09-25   # 复现指定日期；周末运�
 
 ## Network gotchas（实测结论，勿凭直觉换接口）
 
-- 本机走代理 `REDACTED-PROXY`：**东财行情域名（push2/push2his）一律不可用**——不要用 `stock_zh_a_hist`/`stock_hk_hist`/`index_zh_a_hist`；东财 datacenter-web 域名（`stock_value_em`/`stock_notice_report`）可用但必须重试。
+- 部分网络环境（HTTP 代理）下**东财行情域名（push2/push2his）不可用**——不要用 `stock_zh_a_hist`/`stock_hk_hist`/`index_zh_a_hist`；东财 datacenter-web 域名（`stock_value_em`/`stock_notice_report`）可用但必须重试。
 - 拉数脚本通用约定：try/except + 东财源重试 ≥2 次间隔 ≥2s + 普通源间隔 ≥1s + `socket.setdefaulttimeout(30)` + JSON 缓存；新浪源高频会封 IP。
 - 已知数据缺口是设计内行为（指数股息率、社融近期 null 等），报告如实呈现，**不要用前值填充**。
 

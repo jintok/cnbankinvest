@@ -103,7 +103,7 @@ A 股侧走强（溢价收敛）。溢价汇总与南向资金周净流向并列
 
 ## 已知限制
 
-- **东财行情接口（push2/push2his）在本机网络（代理 REDACTED-PROXY）下不可达**：
+- **东财行情接口（push2/push2his）在部分网络环境（HTTP 代理）下不可达**：
   东财行情类一律不用，`stock_value_em`/`stock_notice_report`（datacenter-web 域名）可用但带重试。
 - **快讯仅覆盖最近 24–48 小时**：`stock_info_global_em/_cls` 只返回最新 200/20 条，
   周报「一周要闻」主要靠公告补齐；财联社接口无 URL 字段。

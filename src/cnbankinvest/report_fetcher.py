@@ -14,7 +14,7 @@ period 取值: {年份}年报 / {年份}中报 / {年份}一季报 / {年份}三
 --all 的「最新报告期」读 data/ 下最新 fin_indicators_*.json 的各行 period。
 
 输出：data/reports/{a_code}_{period}.pdf（目录 gitignore，可按需重下）。
-注意：东财 datacenter/公告域名走代理可用但需重试；np-cnotice/pdf.dfcfw 为东财系，
+注意：东财 datacenter/公告域名可用但需重试；np-cnotice/pdf.dfcfw 为东财系，
       同样按「重试≥2次+间隔≥2s」约定调用。
 """
 import argparse

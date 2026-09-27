@@ -9,8 +9,8 @@
 
 | 用途 | 主选接口 | 备用 |
 |---|---|---|
-| A股日线 | `stock_zh_a_daily`（新浪）✅ | `stock_zh_a_hist`（东财，本机不稳❌） |
-| H股日线 | `stock_hk_daily`（新浪）✅ | `stock_hk_hist`（东财，本机不稳❌） |
+| A股日线 | `stock_zh_a_daily`（新浪）✅ | `stock_zh_a_hist`（东财，代理环境下不稳❌） |
+| H股日线 | `stock_hk_daily`（新浪）✅ | `stock_hk_hist`（东财，代理环境下不稳❌） |
 | 指数日线 | `stock_zh_index_hist_csindex`（中证，000300/399986/000922）✅ | `stock_zh_index_daily`（新浪，sh000300/sz399986）✅；申万801780用 `index_hist_sw` ✅ |
 | 个股市值/PE/PB | `stock_value_em`（东财数据中心）✅ | `stock_zh_valuation_baidu`（百度，单指标序列）✅ |
 | 10Y国债 | `bond_china_yield` ✅ | `bond_zh_us_rate` 的中国列为 NaN，不可用❌ |
@@ -21,13 +21,13 @@
 | 财务摘要 | `stock_financial_abstract_ths`（同花顺）✅ | — |
 | 汇率(HKD) | `currency_boc_sina(symbol="港币")` ✅ | `fx_spot_quote()`（HKD/CNY 常为 NaN，不可靠⚠️） |
 
-**最大的坑：本机网络走代理 `REDACTED-PROXY`，东财行情域名（`push2his.eastmoney.com`、`NN.push2.eastmoney.com`）经 Python requests 反复 `ProxyError`（两轮共 6 次全部失败），而 curl 偶尔能通——表现为不稳定，不能依赖。** 东财 `datacenter-web` 类接口（`stock_value_em`、`stock_notice_report`）和新浪/中证/申万/中债/同花顺源均稳定。所有拉数脚本必须：try/except + 失败重试 ≥2 次 + 调用间隔 ≥2s + `socket.setdefaulttimeout(30)` 兜底 + JSON 缓存（沿用仓库「脚本+结果同目录、增量合并、原子写」约定）。
+**最大的坑：在部分网络环境（HTTP 代理）下，东财行情域名（`push2his.eastmoney.com`、`NN.push2.eastmoney.com`）经 Python requests 反复 `ProxyError`（两轮共 6 次全部失败），而 curl 偶尔能通——表现为不稳定，不能依赖。** 东财 `datacenter-web` 类接口（`stock_value_em`、`stock_notice_report`）和新浪/中证/申万/中债/同花顺源均稳定。所有拉数脚本必须：try/except + 失败重试 ≥2 次 + 调用间隔 ≥2s + `socket.setdefaulttimeout(30)` 兜底 + JSON 缓存（沿用仓库「脚本+结果同目录、增量合并、原子写」约定）。
 
 ---
 
 ## A. A股日线
 
-- ❌ `ak.stock_zh_a_hist(symbol="601398", period="daily", start_date="20260901", end_date="20260927", adjust="qfq")` — **东财 kline 接口，本机代理反复拒绝（ProxyError ×6）**。period="weekly" 曾在第一轮侥幸成功一次（37 行，2026-01-09→2026-09-24），证实参数本身正确，纯属网络抖动。成功时列：`日期/股票代码/开盘/收盘/最高/最低/成交量/成交额/振幅/涨跌幅/涨跌额/换手率`（qfq 价保留 2 位小数）。
+- ❌ `ak.stock_zh_a_hist(symbol="601398", period="daily", start_date="20260901", end_date="20260927", adjust="qfq")` — **东财 kline 接口，在代理网络环境下反复拒绝（ProxyError ×6）**。period="weekly" 曾在第一轮侥幸成功一次（37 行，2026-01-09→2026-09-24），证实参数本身正确，纯属网络抖动。成功时列：`日期/股票代码/开盘/收盘/最高/最低/成交量/成交额/振幅/涨跌幅/涨跌额/换手率`（qfq 价保留 2 位小数）。
 - ✅ **替代（推荐主用）**：`ak.stock_zh_a_daily(symbol="sh601398", start_date="20260901", end_date="20260927", adjust="qfq")`（新浪）
   - 签名：`(symbol: str = 'sh603843', start_date: str = '19900101', end_date: str = '21000118', adjust: str = '')`
   - 列：`date(datetime.date)/open/high/low/close/volume(股)/amount(元)/outstanding_share/turnover(换手率，小数形式，0.001≈0.1%)`
@@ -36,7 +36,7 @@
 
 ## B. A股实时快照
 
-- ❌ `ak.stock_zh_a_spot_em()` — 东财 clist 接口，同代理问题。
+- ❌ `ak.stock_zh_a_spot_em()` — 东财 clist 接口，同东财行情域名不可用问题。
 - ✅ **替代**：`ak.stock_zh_a_spot()`（新浪）——5568 行全市场，列：`代码(sh601398格式)/名称/最新价/涨跌额/涨跌幅/买入/卖出/昨收/今开/最高/最低/成交量/成交额/...`；盘中数据，收盘后「最新价」即收盘价。
 
 ## C. 个股估值历史（PE/PB/市值）
@@ -48,12 +48,12 @@
 
 ## D. H股日线
 
-- ❌ `ak.stock_hk_hist(symbol="01398", period="daily", start_date="20260901", end_date="20260927", adjust="qfq")` — 东财 kline，同代理问题。
+- ❌ `ak.stock_hk_hist(symbol="01398", period="daily", start_date="20260901", end_date="20260927", adjust="qfq")` — 东财 kline，同东财行情域名不可用问题。
 - ✅ **替代（推荐主用）**：`ak.stock_hk_daily(symbol="01398", adjust="qfq")`（新浪）——返回**全历史**（工行 4900 行），**无 start/end 参数，需自行截断**；列：`date/open/high/low/close/volume(股)/amount(元)`。样例 2026-09-25：close=7.515。
 
 ## E. H股实时快照
 
-- ❌ `ak.stock_hk_spot_em()` — 东财 clist，同代理问题。
+- ❌ `ak.stock_hk_spot_em()` — 东财 clist，同东财行情域名不可用问题。
 - ✅ **替代**：`ak.stock_hk_spot()`（新浪）——2806 行，列：`日期时间/代码/中文名称/英文名称/交易类型/最新价/涨跌额/涨跌幅/昨收/今开/最高/最低/...`。
 
 ## F. 指数日线
@@ -140,7 +140,7 @@
 
 ## 附：通用注意事项
 
-- **代理**：本机所有 HTTP/HTTPS 走 `REDACTED-PROXY`；东财行情域名（push2/push2his）经 requests 不稳定，脚本里对东财源一律「重试 3 次 + 间隔 3s」，仍失败则落备用源。
+- **网络环境**：东财行情域名（push2/push2his）在代理网络环境下经 requests 不稳定，脚本里对东财源一律「重试 3 次 + 间隔 3s」，仍失败则落备用源。
 - **超时**：akshare 接口大多无 timeout 参数，脚本入口设 `socket.setdefaulttimeout(30)`。
 - **单位速查**：新浪 A股日线 volume=股、amount=元；东财 hist 成交额=元；`stock_value_em` 市值=元；南向资金历史=亿元；同花顺财务摘要=带单位字符串；存贷款月度=亿元；收益率=%；中行牌价=100 外币。
 - **日期格式**：东财/中证/中债类用字符串 `yyyymmdd`；新浪系返回 `datetime.date` 对象；csindex 返回 `日期` 字符串列。
