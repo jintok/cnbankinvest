@@ -1,0 +1,17 @@
+{
+  "说明": "手动维护。来源: 各银行定期报告/业绩快报(净息差、不良率、拨备覆盖率、核心一级资本充足率、分红率)。report 为已披露的最新报告期。akshare 自动部分(营收/净利/ROE)由 fin_report_analysis.py 生成到 analysis 字段, 不要手改。",
+  "banks": [
+    {"name": "工商银行", "a_code": "601398", "report": null, "nim_pct": null, "npl_ratio_pct": null, "provision_coverage_pct": null, "cet1_pct": null, "payout_ratio_pct": null},
+    {"name": "建设银行", "a_code": "601939", "report": null, "nim_pct": null, "npl_ratio_pct": null, "provision_coverage_pct": null, "cet1_pct": null, "payout_ratio_pct": null},
+    {"name": "农业银行", "a_code": "601288", "report": null, "nim_pct": null, "npl_ratio_pct": null, "provision_coverage_pct": null, "cet1_pct": null, "payout_ratio_pct": null},
+    {"name": "中国银行", "a_code": "601988", "report": null, "nim_pct": null, "npl_ratio_pct": null, "provision_coverage_pct": null, "cet1_pct": null, "payout_ratio_pct": null},
+    {"name": "交通银行", "a_code": "601328", "report": null, "nim_pct": null, "npl_ratio_pct": null, "provision_coverage_pct": null, "cet1_pct": null, "payout_ratio_pct": null},
+    {"name": "邮储银行", "a_code": "601658", "report": null, "nim_pct": null, "npl_ratio_pct": null, "provision_coverage_pct": null, "cet1_pct": null, "payout_ratio_pct": null},
+    {"name": "招商银行", "a_code": "600036", "report": null, "nim_pct": null, "npl_ratio_pct": null, "provision_coverage_pct": null, "cet1_pct": null, "payout_ratio_pct": null},
+    {"name": "兴业银行", "a_code": "601166", "report": null, "nim_pct": null, "npl_ratio_pct": null, "provision_coverage_pct": null, "cet1_pct": null, "payout_ratio_pct": null},
+    {"name": "平安银行", "a_code": "000001", "report": null, "nim_pct": null, "npl_ratio_pct": null, "provision_coverage_pct": null, "cet1_pct": null, "payout_ratio_pct": null},
+    {"name": "宁波银行", "a_code": "002142", "report": null, "nim_pct": null, "npl_ratio_pct": null, "provision_coverage_pct": null, "cet1_pct": null, "payout_ratio_pct": null},
+    {"name": "江苏银行", "a_code": "600919", "report": null, "nim_pct": null, "npl_ratio_pct": null, "provision_coverage_pct": null, "cet1_pct": null, "payout_ratio_pct": null},
+    {"name": "成都银行", "a_code": "601838", "report": null, "nim_pct": null, "npl_ratio_pct": null, "provision_coverage_pct": null, "cet1_pct": null, "payout_ratio_pct": null}
+  ]
+}

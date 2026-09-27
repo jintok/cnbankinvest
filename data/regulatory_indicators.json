@@ -1,0 +1,10 @@
+{
+  "说明": "手动维护。来源: 国家金融监督管理总局每季度《商业银行主要监管指标》通报。每次发布后用最新一期追加到 items 头部。null 表示待填报。单位见字段名。",
+  "items": [
+    {"period": "2025Q2", "nim_pct": null, "npl_ratio_pct": null, "provision_coverage_pct": null, "car_pct": null, "profit_yoy_pct": null, "tsf_note": ""},
+    {"period": "2025Q1", "nim_pct": null, "npl_ratio_pct": null, "provision_coverage_pct": null, "car_pct": null, "profit_yoy_pct": null, "tsf_note": ""},
+    {"period": "2024Q4", "nim_pct": null, "npl_ratio_pct": null, "provision_coverage_pct": null, "car_pct": null, "profit_yoy_pct": null, "tsf_note": ""},
+    {"period": "2024Q3", "nim_pct": null, "npl_ratio_pct": null, "provision_coverage_pct": null, "car_pct": null, "profit_yoy_pct": null, "tsf_note": ""},
+    {"period": "2024Q2", "nim_pct": null, "npl_ratio_pct": null, "provision_coverage_pct": null, "car_pct": null, "profit_yoy_pct": null, "tsf_note": ""}
+  ]
+}

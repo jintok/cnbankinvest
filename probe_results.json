@@ -1,0 +1,1376 @@
+{
+ "meta": {
+  "akshare": "1.18.97",
+  "pandas": "3.0.6",
+  "python": "3.14.6"
+ },
+ "results": {
+  "A1": {
+   "desc": "A股日线 daily 601398 qfq (复测)",
+   "status": null,
+   "rows": 0,
+   "columns": [],
+   "head_date": null,
+   "tail_date": null,
+   "sample": null,
+   "error": "ProxyError: HTTPSConnectionPool(host='push2his.eastmoney.com', port=443): Max retries exceeded with url: /api/qt/stock/kline/get?fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5%2Cf6&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58%2Cf59%2Cf60%2Cf61%2Cf116&ut=7ee"
+  },
+  "A2": {
+   "desc": "A股日线 weekly 601398 (东财)",
+   "status": "OK",
+   "signature": "()",
+   "rows": 37,
+   "columns": [
+    "日期",
+    "股票代码",
+    "开盘",
+    "收盘",
+    "最高",
+    "最低",
+    "成交量",
+    "成交额",
+    "振幅",
+    "涨跌幅",
+    "涨跌额",
+    "换手率"
+   ],
+   "head_date": "2026-01-09",
+   "tail_date": "2026-09-24",
+   "sample": {
+    "日期": "2026-09-24",
+    "股票代码": "601398",
+    "开盘": 8.06,
+    "收盘": 8.13,
+    "最高": 8.22,
+    "最低": 8.0,
+    "成交量": 9870499,
+    "成交额": 7989480515.0,
+    "振幅": 2.73,
+    "涨跌幅": 0.74,
+    "涨跌额": 0.06,
+    "换手率": 0.37
+   },
+   "error": null,
+   "elapsed_s": 0.1
+  },
+  "B": {
+   "desc": "A股实时快照 stock_zh_a_spot_em (复测)",
+   "status": null,
+   "rows": 0,
+   "columns": [],
+   "head_date": null,
+   "tail_date": null,
+   "sample": null,
+   "error": "ProxyError: HTTPSConnectionPool(host='82.push2.eastmoney.com', port=443): Max retries exceeded with url: /api/qt/clist/get?pn=1&pz=100&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&fid=f12&fs=m%3A0+t%3A6%2Cm%3A0+t%3A80%2Cm%3A1+t%3A2%2Cm"
+  },
+  "C": {
+   "desc": "估值历史 stock_a_indicator_lg 601398",
+   "status": "FAIL",
+   "signature": "()",
+   "rows": 0,
+   "columns": [],
+   "head_date": null,
+   "tail_date": null,
+   "sample": null,
+   "error": "AttributeError: module 'akshare' has no attribute 'stock_a_indicator_lg'"
+  },
+  "D": {
+   "desc": "H股日线 stock_hk_hist 01398 qfq (复测)",
+   "status": null,
+   "rows": 0,
+   "columns": [],
+   "head_date": null,
+   "tail_date": null,
+   "sample": null,
+   "error": "ProxyError: HTTPSConnectionPool(host='33.push2his.eastmoney.com', port=443): Max retries exceeded with url: /api/qt/stock/kline/get?secid=116.01398&fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5%2Cf6&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58%2Cf59%2Cf60%"
+  },
+  "E": {
+   "desc": "H股实时快照 stock_hk_spot_em (复测)",
+   "status": null,
+   "rows": 0,
+   "columns": [],
+   "head_date": null,
+   "tail_date": null,
+   "sample": null,
+   "error": "ProxyError: HTTPSConnectionPool(host='72.push2.eastmoney.com', port=443): Max retries exceeded with url: /api/qt/clist/get?pn=1&pz=100&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&fid=f12&fs=m%3A128+t%3A3%2Cm%3A128+t%3A4%2Cm%3A128+t%3A"
+  },
+  "F1": {
+   "desc": "index_zh_a_hist 399986 (复测)",
+   "status": null,
+   "rows": 0,
+   "columns": [],
+   "head_date": null,
+   "tail_date": null,
+   "sample": null,
+   "error": "ProxyError: HTTPSConnectionPool(host='80.push2.eastmoney.com', port=443): Max retries exceeded with url: /api/qt/clist/get?pn=1&pz=100&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&fid=f3&fs=b%3AMK0010%2Cm%3A1%2Bt%3A1%2Cm%3A0+t%3A5%2Cm%"
+  },
+  "F2": {
+   "desc": "index_zh_a_hist 000300 (复测)",
+   "status": null,
+   "rows": 0,
+   "columns": [],
+   "head_date": null,
+   "tail_date": null,
+   "sample": null,
+   "error": "ProxyError: HTTPSConnectionPool(host='80.push2.eastmoney.com', port=443): Max retries exceeded with url: /api/qt/clist/get?pn=1&pz=100&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&fid=f3&fs=b%3AMK0010%2Cm%3A1%2Bt%3A1%2Cm%3A0+t%3A5%2Cm%"
+  },
+  "F3": {
+   "desc": "index_zh_a_hist 801780 (复测)",
+   "status": null,
+   "rows": 0,
+   "columns": [],
+   "head_date": null,
+   "tail_date": null,
+   "sample": null,
+   "error": "ProxyError: HTTPSConnectionPool(host='80.push2.eastmoney.com', port=443): Max retries exceeded with url: /api/qt/clist/get?pn=1&pz=100&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&fid=f3&fs=b%3AMK0010%2Cm%3A1%2Bt%3A1%2Cm%3A0+t%3A5%2Cm%"
+  },
+  "F4": {
+   "desc": "stock_zh_index_daily sh000300 (新浪)",
+   "status": "OK",
+   "signature": "()",
+   "rows": 6000,
+   "columns": [
+    "date",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+   ],
+   "head_date": "2002-01-04",
+   "tail_date": "2026-09-24",
+   "sample": {
+    "date": "2026-09-24",
+    "open": 4499.857,
+    "high": 4500.202,
+    "low": 4439.144,
+    "close": 4439.144,
+    "volume": 15196578700
+   },
+   "error": null,
+   "elapsed_s": 0.3
+  },
+  "F5": {
+   "desc": "stock_zh_index_daily sz399986 (新浪)",
+   "status": "OK",
+   "signature": "()",
+   "rows": 2763,
+   "columns": [
+    "date",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+   ],
+   "head_date": "2015-05-19",
+   "tail_date": "2026-09-24",
+   "sample": {
+    "date": "2026-09-24",
+    "open": 7455.136,
+    "high": 7535.869,
+    "low": 7455.136,
+    "close": 7483.457,
+    "volume": 3115689927
+   },
+   "error": null,
+   "elapsed_s": 0.3
+  },
+  "F6": {
+   "desc": "stock_zh_index_hist_csindex 000922 中证红利",
+   "status": "OK",
+   "signature": "()",
+   "rows": 18,
+   "columns": [
+    "日期",
+    "指数代码",
+    "指数中文全称",
+    "指数中文简称",
+    "指数英文全称",
+    "指数英文简称",
+    "开盘",
+    "最高",
+    "最低",
+    "收盘",
+    "涨跌",
+    "涨跌幅",
+    "成交量",
+    "成交金额",
+    "样本数量",
+    "滚动市盈率"
+   ],
+   "head_date": "2026-09-01",
+   "tail_date": "2026-09-24",
+   "sample": {
+    "日期": "2026-09-24",
+    "指数代码": "000922",
+    "指数中文全称": "中证红利指数",
+    "指数中文简称": "中证红利",
+    "指数英文全称": "CSI Dividend Index",
+    "指数英文简称": "CSI Dividend",
+    "开盘": 5475.63,
+    "最高": 5512.85,
+    "最低": 5459.98,
+    "收盘": 5469.4,
+    "涨跌": -14.63,
+    "涨跌幅": -0.27,
+    "成交量": 4182417975.0,
+    "成交金额": 418.76,
+    "样本数量": 100.0,
+    "滚动市盈率": 8.5
+   },
+   "error": null,
+   "elapsed_s": 0.1
+  },
+  "F7": {
+   "desc": "stock_zh_index_hist_csindex 399986 中证银行",
+   "status": "OK",
+   "signature": "()",
+   "rows": 18,
+   "columns": [
+    "日期",
+    "指数代码",
+    "指数中文全称",
+    "指数中文简称",
+    "指数英文全称",
+    "指数英文简称",
+    "开盘",
+    "最高",
+    "最低",
+    "收盘",
+    "涨跌",
+    "涨跌幅",
+    "成交量",
+    "成交金额",
+    "样本数量",
+    "滚动市盈率"
+   ],
+   "head_date": "2026-09-01",
+   "tail_date": "2026-09-24",
+   "sample": {
+    "日期": "2026-09-24",
+    "指数代码": "399986",
+    "指数中文全称": "中证银行指数",
+    "指数中文简称": "中证银行",
+    "指数英文全称": "CSI Banks Index",
+    "指数英文简称": "CSI Banks",
+    "开盘": 7455.14,
+    "最高": 7535.87,
+    "最低": 7455.14,
+    "收盘": 7483.46,
+    "涨跌": 23.13,
+    "涨跌幅": 0.31,
+    "成交量": 3115689927.0,
+    "成交金额": 243.99,
+    "样本数量": 42.0,
+    "滚动市盈率": 7.08
+   },
+   "error": null,
+   "elapsed_s": 0.1
+  },
+  "F8": {
+   "desc": "index_hist_sw 801780 申万银行 (申万宏源)",
+   "status": "OK",
+   "signature": "()",
+   "rows": 3049,
+   "columns": [
+    "代码",
+    "日期",
+    "收盘",
+    "开盘",
+    "最高",
+    "最低",
+    "成交量",
+    "成交额"
+   ],
+   "head_date": "2014-02-21",
+   "tail_date": "2026-09-24",
+   "sample": {
+    "代码": "801780",
+    "日期": "2026-09-24",
+    "收盘": 4140.14,
+    "开盘": 4124.27,
+    "最高": 4168.97,
+    "最低": 4124.27,
+    "成交量": 31.15689927,
+    "成交额": 243.99464934
+   },
+   "error": null,
+   "elapsed_s": 0.3
+  },
+  "G": {
+   "desc": "bond_china_yield 中债收益率曲线",
+   "status": "OK",
+   "signature": "()",
+   "rows": 57,
+   "columns": [
+    "曲线名称",
+    "日期",
+    "3月",
+    "6月",
+    "1年",
+    "3年",
+    "5年",
+    "7年",
+    "10年",
+    "30年"
+   ],
+   "head_date": "2026-09-01",
+   "tail_date": "2026-09-24",
+   "sample": {
+    "曲线名称": "中债国债收益率曲线",
+    "日期": "2026-09-24",
+    "3月": 1.181,
+    "6月": 1.2102,
+    "1年": 1.2327,
+    "3年": 1.2893,
+    "5年": 1.4058,
+    "7年": 1.5012,
+    "10年": 1.6738,
+    "30年": 2.082
+   },
+   "error": null,
+   "elapsed_s": 1.4
+  },
+  "H": {
+   "desc": "rate_interbank Shibor 1周 (indicator='1周')",
+   "status": "OK",
+   "rows": 4989,
+   "columns": [
+    "报告日",
+    "利率",
+    "涨跌"
+   ],
+   "head_date": "2006-10-08",
+   "tail_date": "2026-09-24",
+   "sample": {
+    "报告日": "2026-09-24",
+    "利率": 1.4,
+    "涨跌": 1.6
+   },
+   "error": null,
+   "elapsed_s": 3.2
+  },
+  "I1": {
+   "desc": "南向资金 stock_hsgt_hist_em(symbol='南向资金')",
+   "status": "OK",
+   "rows": 2722,
+   "columns": [
+    "日期",
+    "当日成交净买额",
+    "买入成交额",
+    "卖出成交额",
+    "历史累计净买额",
+    "当日资金流入",
+    "当日余额",
+    "持股市值",
+    "领涨股",
+    "领涨股-涨跌幅",
+    "沪深300",
+    "沪深300-涨跌幅",
+    "领涨股-代码"
+   ],
+   "head_date": "2014-11-17",
+   "tail_date": "2026-09-24",
+   "sample": {
+    "日期": "2026-09-24",
+    "当日成交净买额": 28.9977,
+    "买入成交额": 329.5011,
+    "卖出成交额": 300.5034,
+    "历史累计净买额": 5.5373765299999995,
+    "当日资金流入": "nan",
+    "当日余额": "nan",
+    "持股市值": 12018224949450.0,
+    "领涨股": "多点数智",
+    "领涨股-涨跌幅": 15.62,
+    "沪深300": 24761.13,
+    "沪深300-涨跌幅": -0.29,
+    "领涨股-代码": "02586.HK"
+   },
+   "error": null,
+   "elapsed_s": 1.2
+  },
+  "I2": {
+   "desc": "沪深港通资金流汇总 stock_hsgt_fund_flow_summary_em",
+   "status": "OK",
+   "signature": "()",
+   "rows": 4,
+   "columns": [
+    "交易日",
+    "类型",
+    "板块",
+    "资金方向",
+    "交易状态",
+    "成交净买额",
+    "资金净流入",
+    "当日资金余额",
+    "上涨数",
+    "持平数",
+    "下跌数",
+    "相关指数",
+    "指数涨跌幅"
+   ],
+   "head_date": "2026-09-27",
+   "tail_date": "2026-09-27",
+   "sample": {
+    "交易日": "2026-09-27",
+    "类型": "深港通",
+    "板块": "港股通(深)",
+    "资金方向": "南向",
+    "交易状态": 3,
+    "成交净买额": -1.990947,
+    "资金净流入": 420.0,
+    "当日资金余额": 0.0,
+    "上涨数": 115,
+    "持平数": 28,
+    "下跌数": 519,
+    "相关指数": "恒生指数",
+    "指数涨跌幅": -1.01
+   },
+   "error": null,
+   "elapsed_s": 0.2
+  },
+  "J1": {
+   "desc": "全球财经快讯 stock_info_global_em",
+   "status": "OK",
+   "signature": "()",
+   "rows": 200,
+   "columns": [
+    "标题",
+    "摘要",
+    "发布时间",
+    "链接"
+   ],
+   "head_date": null,
+   "tail_date": null,
+   "sample": {
+    "标题": "离岸人民币兑美元较周四纽约尾盘跌68点",
+    "摘要": "【离岸人民币兑美元较周四纽约尾盘跌68点】周五（9月25日）纽约尾盘（周六北京时间04:59），离岸人民币（CNH...",
+    "发布时间": "2026-09-26 05:15:54",
+    "链接": "https://finance.eastmoney.com/a/202609263884354384.html"
+   },
+   "error": null,
+   "elapsed_s": 0.2
+  },
+  "J2": {
+   "desc": "财联社电报 stock_info_global_cls",
+   "status": "OK",
+   "signature": "()",
+   "rows": 20,
+   "columns": [
+    "标题",
+    "内容",
+    "发布日期",
+    "发布时间"
+   ],
+   "head_date": null,
+   "tail_date": null,
+   "sample": {
+    "标题": "我国启动研制商业航天育种专用卫星",
+    "内容": "【我国启动研制商业航天育种专用卫星】财联社9月27日电，据陕西发布，近日，陕西省航天育种工程技术研究中心与中科卫星...",
+    "发布日期": "2026-09-27",
+    "发布时间": "11:54:54"
+   },
+   "error": null,
+   "elapsed_s": 0.1
+  },
+  "K1": {
+   "desc": "公告 stock_notice_report 全部 20260925 (复测, symbol=报告类型)",
+   "status": "OK",
+   "rows": 805,
+   "columns": [
+    "代码",
+    "名称",
+    "公告标题",
+    "公告类型",
+    "公告日期",
+    "网址"
+   ],
+   "head_date": null,
+   "tail_date": null,
+   "sample": {
+    "代码": "605589",
+    "名称": "圣泉集团",
+    "公告标题": "圣泉集团:圣泉集团关于调整2025年员工持股计划预留份额受让价格及预留份额分配的公告",
+    "公告类型": "员工持股计划",
+    "公告日期": "2026-09-25",
+    "网址": "https://data.eastmoney.com/notices/detail/605589/AN202609..."
+   },
+   "error": null,
+   "elapsed_s": 2.4
+  },
+  "K2": {
+   "desc": "公告 stock_notice_report 601398 20260926",
+   "status": "FAIL",
+   "signature": "()",
+   "rows": 0,
+   "columns": [],
+   "head_date": null,
+   "tail_date": null,
+   "sample": null,
+   "error": "KeyError: '601398'"
+  },
+  "L": {
+   "desc": "财务摘要 stock_financial_abstract_ths 601398 按报告期",
+   "status": "OK",
+   "signature": "()",
+   "rows": 85,
+   "columns": [
+    "报告期",
+    "净利润",
+    "净利润同比增长率",
+    "扣非净利润",
+    "扣非净利润同比增长率",
+    "营业总收入",
+    "营业总收入同比增长率",
+    "基本每股收益",
+    "每股净资产",
+    "每股资本公积金",
+    "每股未分配利润",
+    "每股经营现金流",
+    "销售净利率",
+    "净资产收益率",
+    "净资产收益率-摊薄",
+    "产权比率",
+    "资产负债率"
+   ],
+   "head_date": "2003-12-31",
+   "tail_date": "2026-06-30",
+   "sample": {
+    "报告期": "2026-06-30",
+    "净利润": "1736.82亿",
+    "净利润同比增长率": "3.32%",
+    "扣非净利润": "1730.82亿",
+    "扣非净利润同比增长率": "3.20%",
+    "营业总收入": "4658.59亿",
+    "营业总收入同比增长率": "9.08%",
+    "基本每股收益": "0.4700",
+    "每股净资产": "11.12",
+    "每股资本公积金": "0.40",
+    "每股未分配利润": "6.42",
+    "每股经营现金流": "3.84",
+    "销售净利率": "37.88%",
+    "净资产收益率": "4.32%",
+    "净资产收益率-摊薄": "4.01%",
+    "产权比率": "12.18",
+    "资产负债率": "92.37%"
+   },
+   "error": null,
+   "elapsed_s": 0.4
+  },
+  "M0": {
+   "desc": "dir(ak) 含 bank 的接口",
+   "status": "OK",
+   "bank_funcs": [
+    "bank",
+    "bank_fjcf_table_detail",
+    "macro_australia_bank_rate",
+    "macro_bank_australia_interest_rate",
+    "macro_bank_brazil_interest_rate",
+    "macro_bank_china_interest_rate",
+    "macro_bank_english_interest_rate",
+    "macro_bank_euro_interest_rate",
+    "macro_bank_india_interest_rate",
+    "macro_bank_japan_interest_rate",
+    "macro_bank_newzealand_interest_rate",
+    "macro_bank_russia_interest_rate",
+    "macro_bank_switzerland_interest_rate",
+    "macro_bank_usa_interest_rate",
+    "macro_canada_bank_rate",
+    "macro_china_bank_financing",
+    "macro_china_central_bank_balance",
+    "macro_japan_bank_rate",
+    "macro_swiss_gbd_bank_rate",
+    "macro_uk_bank_rate",
+    "rate_interbank",
+    "stock_gpzy_distribute_statistics_bank_em"
+   ],
+   "signature": null,
+   "rows": 0,
+   "columns": [],
+   "sample": null,
+   "error": null
+  },
+  "M-bank_fjcf_table_detail": {
+   "desc": "bank接口 bank_fjcf_table_detail()",
+   "status": "OK",
+   "signature": "(page: int = 5, item: str = '分局本级', begin: int = 1) -> pandas.DataFrame",
+   "rows": 3,
+   "columns": [
+    "行政处罚决定书文号",
+    "姓名",
+    "单位",
+    "单位名称",
+    "主要负责人姓名",
+    "主要违法违规事实（案由）",
+    "行政处罚依据",
+    "行政处罚决定",
+    "作出处罚决定的机关名称",
+    "作出处罚决定的日期",
+    "处罚ID",
+    "处罚公布日期"
+   ],
+   "head_date": null,
+   "tail_date": null,
+   "sample": {
+    "行政处罚决定书文号": "主要违法违规行为",
+    "姓名": "虚挂保险代理业务",
+    "单位": NaN,
+    "单位名称": NaN,
+    "主要负责人姓名": NaN,
+    "主要违法违规事实（案由）": "对机构虚挂保险代理业务的行为负相关责任",
+    "行政处罚依据": "财务业务数据不真实，虚列费用套取资金",
+    "行政处罚决定": "对机构财务业务数据不真实，虚列费用套取资金的行为负相关责任",
+    "作出处罚决定的机关名称": "财务业务数据不真实，虚增承保面积",
+    "作出处罚决定的日期": "对机构财务业务数据不真实，虚增承保面积的行为负相关责任",
+    "处罚ID": "1270644",
+    "处罚公布日期": "2026-09-03 10:12:00"
+   },
+   "error": null,
+   "elapsed_s": 11.7
+  },
+  "M-macro_australia_bank_rate": {
+   "desc": "bank接口 macro_australia_bank_rate()",
+   "status": "OK",
+   "signature": "() -> pandas.DataFrame",
+   "rows": 194,
+   "columns": [
+    "时间",
+    "前值",
+    "现值",
+    "发布日期"
+   ],
+   "head_date": null,
+   "tail_date": null,
+   "sample": {
+    "时间": "2025年07月",
+    "前值": 3.85,
+    "现值": 3.85,
+    "发布日期": "2025-07-08"
+   },
+   "error": null,
+   "elapsed_s": 0.2
+  },
+  "M-macro_bank_australia_interest_rate": {
+   "desc": "bank接口 macro_bank_australia_interest_rate()",
+   "status": "OK",
+   "signature": "() -> pandas.DataFrame",
+   "rows": 528,
+   "columns": [
+    "商品",
+    "日期",
+    "今值",
+    "预测值",
+    "前值"
+   ],
+   "head_date": "1980-02-01",
+   "tail_date": "2025-08-12",
+   "sample": {
+    "商品": "澳洲联储决议报告",
+    "日期": "2025-08-12",
+    "今值": 3.6,
+    "预测值": 3.6,
+    "前值": 3.85
+   },
+   "error": null,
+   "elapsed_s": 2.7
+  },
+  "M-macro_bank_brazil_interest_rate": {
+   "desc": "bank接口 macro_bank_brazil_interest_rate()",
+   "status": "OK",
+   "signature": "() -> pandas.DataFrame",
+   "rows": 156,
+   "columns": [
+    "商品",
+    "日期",
+    "今值",
+    "预测值",
+    "前值"
+   ],
+   "head_date": "2008-02-01",
+   "tail_date": "2025-09-18",
+   "sample": {
+    "商品": "巴西央行决议报告",
+    "日期": "2025-09-18",
+    "今值": NaN,
+    "预测值": NaN,
+    "前值": 15.0
+   },
+   "error": null,
+   "elapsed_s": 0.9
+  },
+  "M-macro_bank_china_interest_rate": {
+   "desc": "bank接口 macro_bank_china_interest_rate()",
+   "status": "OK",
+   "signature": "() -> pandas.DataFrame",
+   "rows": 218,
+   "columns": [
+    "商品",
+    "日期",
+    "今值",
+    "预测值",
+    "前值"
+   ],
+   "head_date": "1991-05-01",
+   "tail_date": "2019-11-20",
+   "sample": {
+    "商品": "中国央行决议报告",
+    "日期": "2019-11-20",
+    "今值": 4.15,
+    "预测值": 4.2,
+    "前值": 4.2
+   },
+   "error": null,
+   "elapsed_s": 1.1
+  },
+  "M-macro_bank_english_interest_rate": {
+   "desc": "bank接口 macro_bank_english_interest_rate()",
+   "status": "OK",
+   "signature": "() -> pandas.DataFrame",
+   "rows": 638,
+   "columns": [
+    "商品",
+    "日期",
+    "今值",
+    "预测值",
+    "前值"
+   ],
+   "head_date": "1970-01-01",
+   "tail_date": "2025-09-18",
+   "sample": {
+    "商品": "英国央行决议报告",
+    "日期": "2025-09-18",
+    "今值": NaN,
+    "预测值": NaN,
+    "前值": 4.0
+   },
+   "error": null,
+   "elapsed_s": 3.3
+  },
+  "M-macro_bank_euro_interest_rate": {
+   "desc": "bank接口 macro_bank_euro_interest_rate()",
+   "status": "OK",
+   "signature": "() -> pandas.DataFrame",
+   "rows": 279,
+   "columns": [
+    "商品",
+    "日期",
+    "今值",
+    "预测值",
+    "前值"
+   ],
+   "head_date": "1999-01-01",
+   "tail_date": "2025-09-11",
+   "sample": {
+    "商品": "欧洲央行决议报告",
+    "日期": "2025-09-11",
+    "今值": NaN,
+    "预测值": NaN,
+    "前值": 2.15
+   },
+   "error": null,
+   "elapsed_s": 1.5
+  },
+  "M-macro_bank_india_interest_rate": {
+   "desc": "bank接口 macro_bank_india_interest_rate()",
+   "status": "OK",
+   "signature": "() -> pandas.DataFrame",
+   "rows": 232,
+   "columns": [
+    "商品",
+    "日期",
+    "今值",
+    "预测值",
+    "前值"
+   ],
+   "head_date": "2000-08-01",
+   "tail_date": "2025-08-06",
+   "sample": {
+    "商品": "印度央行决议报告",
+    "日期": "2025-08-06",
+    "今值": 5.5,
+    "预测值": 5.5,
+    "前值": 5.5
+   },
+   "error": null,
+   "elapsed_s": 1.3
+  },
+  "M-macro_bank_japan_interest_rate": {
+   "desc": "bank接口 macro_bank_japan_interest_rate()",
+   "status": "OK",
+   "signature": "() -> pandas.DataFrame",
+   "rows": 203,
+   "columns": [
+    "商品",
+    "日期",
+    "今值",
+    "预测值",
+    "前值"
+   ],
+   "head_date": "2008-02-14",
+   "tail_date": "2025-10-30",
+   "sample": {
+    "商品": "日本央行决议报告",
+    "日期": "2025-10-30",
+    "今值": NaN,
+    "预测值": NaN,
+    "前值": NaN
+   },
+   "error": null,
+   "elapsed_s": 1.2
+  },
+  "M-macro_bank_newzealand_interest_rate": {
+   "desc": "bank接口 macro_bank_newzealand_interest_rate()",
+   "status": "OK",
+   "signature": "() -> pandas.DataFrame",
+   "rows": 240,
+   "columns": [
+    "商品",
+    "日期",
+    "今值",
+    "预测值",
+    "前值"
+   ],
+   "head_date": "1999-04-01",
+   "tail_date": "2025-08-20",
+   "sample": {
+    "商品": "新西兰利率决议报告",
+    "日期": "2025-08-20",
+    "今值": 3.0,
+    "预测值": 3.0,
+    "前值": 3.25
+   },
+   "error": null,
+   "elapsed_s": 1.3
+  },
+  "M-macro_bank_russia_interest_rate": {
+   "desc": "bank接口 macro_bank_russia_interest_rate()",
+   "status": "OK",
+   "signature": "() -> pandas.DataFrame",
+   "rows": 226,
+   "columns": [
+    "商品",
+    "日期",
+    "今值",
+    "预测值",
+    "前值"
+   ],
+   "head_date": "2003-06-01",
+   "tail_date": "2025-09-12",
+   "sample": {
+    "商品": "俄罗斯央行决议报告",
+    "日期": "2025-09-12",
+    "今值": NaN,
+    "预测值": NaN,
+    "前值": 18.0
+   },
+   "error": null,
+   "elapsed_s": 1.3
+  },
+  "M-macro_bank_switzerland_interest_rate": {
+   "desc": "bank接口 macro_bank_switzerland_interest_rate()",
+   "status": "OK",
+   "signature": "() -> pandas.DataFrame",
+   "rows": 75,
+   "columns": [
+    "商品",
+    "日期",
+    "今值",
+    "预测值",
+    "前值"
+   ],
+   "head_date": "2008-03-13",
+   "tail_date": "2025-09-25",
+   "sample": {
+    "商品": "瑞士央行决议报告",
+    "日期": "2025-09-25",
+    "今值": NaN,
+    "预测值": NaN,
+    "前值": 0.0
+   },
+   "error": null,
+   "elapsed_s": 0.5
+  },
+  "M-macro_bank_usa_interest_rate": {
+   "desc": "bank接口 macro_bank_usa_interest_rate()",
+   "status": "OK",
+   "signature": "() -> pandas.DataFrame",
+   "rows": 294,
+   "columns": [
+    "商品",
+    "日期",
+    "今值",
+    "预测值",
+    "前值"
+   ],
+   "head_date": "1982-09-28",
+   "tail_date": "2025-10-30",
+   "sample": {
+    "商品": "美联储利率决议报告",
+    "日期": "2025-10-30",
+    "今值": NaN,
+    "预测值": NaN,
+    "前值": NaN
+   },
+   "error": null,
+   "elapsed_s": 1.6
+  },
+  "M-macro_canada_bank_rate": {
+   "desc": "bank接口 macro_canada_bank_rate()",
+   "status": "OK",
+   "signature": "() -> pandas.DataFrame",
+   "rows": 179,
+   "columns": [
+    "时间",
+    "前值",
+    "现值",
+    "发布日期"
+   ],
+   "head_date": null,
+   "tail_date": null,
+   "sample": {
+    "时间": "2008年01月",
+    "前值": NaN,
+    "现值": 4.0,
+    "发布日期": "2008-01-15"
+   },
+   "error": null,
+   "elapsed_s": 0.2
+  },
+  "M-macro_china_bank_financing": {
+   "desc": "bank接口 macro_china_bank_financing()",
+   "status": "OK",
+   "signature": "() -> pandas.DataFrame",
+   "rows": 272,
+   "columns": [
+    "日期",
+    "最新值",
+    "涨跌幅",
+    "近3月涨跌幅",
+    "近6月涨跌幅",
+    "近1年涨跌幅",
+    "近2年涨跌幅",
+    "近3年涨跌幅"
+   ],
+   "head_date": "2000-03-01",
+   "tail_date": "2026-08-01",
+   "sample": {
+    "日期": "2026-08-01",
+    "最新值": 3461,
+    "涨跌幅": -9.9635796,
+    "近3月涨跌幅": 19.50966851,
+    "近6月涨跌幅": 54.71613768,
+    "近1年涨跌幅": 25.48948513,
+    "近2年涨跌幅": -8.34216102,
+    "近3年涨跌幅": 13.58713489
+   },
+   "error": null,
+   "elapsed_s": 0.2
+  },
+  "M-macro_china_central_bank_balance": {
+   "desc": "bank接口 macro_china_central_bank_balance()",
+   "status": "OK",
+   "signature": "() -> pandas.DataFrame",
+   "rows": 356,
+   "columns": [
+    "统计时间",
+    "国外资产",
+    "外汇",
+    "货币黄金",
+    "其他国外资产",
+    "对政府债权",
+    "其中:中央政府",
+    "对其他存款性公司债权",
+    "对其他金融性公司债权",
+    "对非货币金融机构债权",
+    "对非金融性公司债权",
+    "其他资产",
+    "总资产",
+    "储备货币",
+    "发行货币",
+    "金融性公司存款",
+    "其他存款性公司",
+    "其他金融性公司",
+    "对金融机构负债",
+    "准备金存款",
+    "非金融性公司存款",
+    "活期存款",
+    "债券",
+    "国外负债",
+    "政府存款",
+    "自有资金",
+    "其他负债",
+    "总负债"
+   ],
+   "head_date": null,
+   "tail_date": null,
+   "sample": {
+    "统计时间": "1993.3",
+    "国外资产": 1324.0,
+    "外汇": 1222.0,
+    "货币黄金": 12.0,
+    "其他国外资产": 90.0,
+    "对政府债权": NaN,
+    "其中:中央政府": 1339.6,
+    "对其他存款性公司债权": NaN,
+    "对其他金融性公司债权": 213.5,
+    "对非货币金融机构债权": NaN,
+    "对非金融性公司债权": 561.1,
+    "其他资产": NaN,
+    "总资产": NaN,
+    "储备货币": 9846.1,
+    "发行货币": 4867.3,
+    "金融性公司存款": 3844.6,
+    "其他存款性公司": NaN,
+    "其他金融性公司": NaN,
+    "对金融机构负债": NaN,
+    "准备金存款": NaN,
+    "非金融性公司存款": 1134.2,
+    "活期存款": NaN,
+    "债券": NaN,
+    "国外负债": NaN,
+    "政府存款": 337.6,
+    "自有资金": 310.3,
+    "其他负债": -384.1,
+    "总负债": NaN
+   },
+   "error": null,
+   "elapsed_s": 2.3
+  },
+  "M-macro_japan_bank_rate": {
+   "desc": "bank接口 macro_japan_bank_rate()",
+   "status": "OK",
+   "signature": "() -> pandas.DataFrame",
+   "rows": 201,
+   "columns": [
+    "时间",
+    "前值",
+    "现值",
+    "发布日期"
+   ],
+   "head_date": null,
+   "tail_date": null,
+   "sample": {
+    "时间": "2026年10月",
+    "前值": 1.25,
+    "现值": NaN,
+    "发布日期": "2026-10-30"
+   },
+   "error": null,
+   "elapsed_s": 0.2
+  },
+  "M-macro_swiss_gbd_bank_rate": {
+   "desc": "bank接口 macro_swiss_gbd_bank_rate()",
+   "status": "OK",
+   "signature": "()",
+   "rows": 76,
+   "columns": [
+    "时间",
+    "前值",
+    "现值",
+    "发布日期"
+   ],
+   "head_date": null,
+   "tail_date": null,
+   "sample": {
+    "时间": "2008年03月",
+    "前值": NaN,
+    "现值": 2.75,
+    "发布日期": "NaT"
+   },
+   "error": null,
+   "elapsed_s": 0.2
+  },
+  "M-macro_uk_bank_rate": {
+   "desc": "bank接口 macro_uk_bank_rate()",
+   "status": "OK",
+   "signature": "() -> pandas.DataFrame",
+   "rows": 188,
+   "columns": [
+    "时间",
+    "前值",
+    "现值",
+    "发布日期"
+   ],
+   "head_date": null,
+   "tail_date": null,
+   "sample": {
+    "时间": "2026年11月",
+    "前值": 3.75,
+    "现值": NaN,
+    "发布日期": "2026-11-05"
+   },
+   "error": null,
+   "elapsed_s": 0.2
+  },
+  "M-rate_interbank": {
+   "desc": "bank接口 rate_interbank()",
+   "status": "OK",
+   "signature": "(market: str = '上海银行同业拆借市场', symbol: str = 'Shibor人民币', indicator: str = '隔夜')",
+   "rows": 4989,
+   "columns": [
+    "报告日",
+    "利率",
+    "涨跌"
+   ],
+   "head_date": null,
+   "tail_date": null,
+   "sample": {
+    "报告日": "2026-09-24",
+    "利率": 1.364,
+    "涨跌": 0.27
+   },
+   "error": null,
+   "elapsed_s": 2.8
+  },
+  "M-stock_gpzy_distribute_statistics_bank_em": {
+   "desc": "bank接口 stock_gpzy_distribute_statistics_bank_em()",
+   "status": "FAIL",
+   "signature": "() -> pandas.DataFrame",
+   "rows": 0,
+   "columns": [],
+   "head_date": null,
+   "tail_date": null,
+   "sample": null,
+   "error": "TypeError: 'NoneType' object is not subscriptable"
+  },
+  "N": {
+   "desc": "bond_zh_us_rate 中美利差",
+   "status": "OK",
+   "signature": "()",
+   "rows": 9352,
+   "columns": [
+    "日期",
+    "中国国债收益率2年",
+    "中国国债收益率5年",
+    "中国国债收益率10年",
+    "中国国债收益率30年",
+    "中国国债收益率10年-2年",
+    "中国GDP年增率",
+    "美国国债收益率2年",
+    "美国国债收益率5年",
+    "美国国债收益率10年",
+    "美国国债收益率30年",
+    "美国国债收益率10年-2年",
+    "美国GDP年增率"
+   ],
+   "head_date": "1990-12-19",
+   "tail_date": "2026-09-25",
+   "sample": {
+    "日期": "2026-09-25",
+    "中国国债收益率2年": NaN,
+    "中国国债收益率5年": NaN,
+    "中国国债收益率10年": NaN,
+    "中国国债收益率30年": NaN,
+    "中国国债收益率10年-2年": NaN,
+    "中国GDP年增率": NaN,
+    "美国国债收益率2年": 4.81,
+    "美国国债收益率5年": 4.98,
+    "美国国债收益率10年": 5.17,
+    "美国国债收益率30年": 5.49,
+    "美国国债收益率10年-2年": 0.36,
+    "美国GDP年增率": NaN
+   },
+   "error": null,
+   "elapsed_s": 2.6
+  },
+  "C1": {
+   "desc": "百度估值 stock_zh_valuation_baidu 601398 市盈率(TTM)",
+   "status": "OK",
+   "rows": 365,
+   "columns": [
+    "date",
+    "value"
+   ],
+   "head_date": null,
+   "tail_date": null,
+   "sample": {
+    "date": "2026-09-26",
+    "value": 8.0
+   },
+   "error": null,
+   "elapsed_s": 0.2
+  },
+  "C2": {
+   "desc": "百度估值 stock_zh_valuation_baidu 601398 市净率",
+   "status": "OK",
+   "rows": 365,
+   "columns": [
+    "date",
+    "value"
+   ],
+   "head_date": null,
+   "tail_date": null,
+   "sample": {
+    "date": "2026-09-26",
+    "value": 0.73
+   },
+   "error": null,
+   "elapsed_s": 0.5
+  },
+  "C3": {
+   "desc": "东财估值 stock_value_em 601398",
+   "status": "OK",
+   "rows": 2120,
+   "columns": [
+    "数据日期",
+    "当日收盘价",
+    "当日涨跌幅",
+    "总市值",
+    "流通市值",
+    "总股本",
+    "流通股本",
+    "PE(TTM)",
+    "PE(静)",
+    "市净率",
+    "PEG值",
+    "市现率",
+    "市销率"
+   ],
+   "head_date": null,
+   "tail_date": null,
+   "sample": {
+    "数据日期": "2026-09-24",
+    "当日收盘价": 8.13,
+    "当日涨跌幅": 0.494437577256,
+    "总市值": 2897582870133.57,
+    "流通市值": 2191947287942.07,
+    "总股本": 356406257089,
+    "流通股本": 269612212539,
+    "PE(TTM)": 7.74462801,
+    "PE(静)": 7.86186007,
+    "市净率": 0.73128294,
+    "PEG值": 10.446504582348,
+    "市现率": 1.1715803,
+    "市销率": 3.30383196
+   },
+   "error": null,
+   "elapsed_s": 0.5
+  },
+  "C4": {
+   "desc": "百度估值 stock_zh_valuation_baidu 601398 股息率?",
+   "status": null,
+   "rows": 0,
+   "columns": [],
+   "head_date": null,
+   "tail_date": null,
+   "sample": null,
+   "error": "TypeError: 'NoneType' object is not subscriptable"
+  },
+  "M-macro_rmb_deposit": {
+   "desc": "macro_rmb_deposit 人民币存款",
+   "status": "OK",
+   "rows": 30,
+   "columns": [
+    "月份",
+    "新增存款-数量",
+    "新增存款-同比",
+    "新增存款-环比",
+    "新增企业存款-数量",
+    "新增企业存款-同比",
+    "新增企业存款-环比",
+    "新增储蓄存款-数量",
+    "新增储蓄存款-同比",
+    "新增储蓄存款-环比",
+    "新增其他存款-数量",
+    "新增其他存款-同比",
+    "新增其他存款-环比"
+   ],
+   "head_date": null,
+   "tail_date": null,
+   "sample": {
+    "月份": "2026-08",
+    "新增存款-数量": 3476700.76,
+    "新增存款-同比": "7.73%",
+    "新增存款-环比": "0.35%",
+    "新增企业存款-数量": 822741.99,
+    "新增企业存款-同比": "4.33%",
+    "新增企业存款-环比": "0.34%",
+    "新增储蓄存款-数量": 1728944.62,
+    "新增储蓄存款-同比": "7.37%",
+    "新增储蓄存款-环比": "0.02%",
+    "新增其他存款-数量": 83849.31,
+    "新增其他存款-同比": "7.02%",
+    "新增其他存款-环比": "1.32%"
+   },
+   "error": null,
+   "elapsed_s": 0.2
+  },
+  "M-macro_rmb_loan": {
+   "desc": "macro_rmb_loan 人民币贷款",
+   "status": "OK",
+   "rows": 30,
+   "columns": [
+    "月份",
+    "新增人民币贷款-总额",
+    "新增人民币贷款-同比",
+    "新增人民币贷款-环比",
+    "累计人民币贷款-总额",
+    "累计人民币贷款-同比"
+   ],
+   "head_date": null,
+   "tail_date": null,
+   "sample": {
+    "月份": "2026-08",
+    "新增人民币贷款-总额": 600.0,
+    "新增人民币贷款-同比": "-89.83%",
+    "新增人民币贷款-环比": "117.65%",
+    "累计人民币贷款-总额": 2823513.09,
+    "累计人民币贷款-同比": "4.92%"
+   },
+   "error": null,
+   "elapsed_s": 0.9
+  },
+  "G-curves": {
+   "desc": "bond_china_yield 曲线名称",
+   "status": "OK",
+   "curves": [
+    "中债中短期票据收益率曲线(AAA)",
+    "中债商业银行普通债收益率曲线(AAA)",
+    "中债国债收益率曲线"
+   ],
+   "gov10y_sample": [
+    {
+     "曲线名称": "中债国债收益率曲线",
+     "日期": "2026-09-22",
+     "3月": 1.1865,
+     "6月": 1.1952,
+     "1年": 1.2317,
+     "3年": 1.2847,
+     "5年": 1.4053,
+     "7年": 1.5019,
+     "10年": 1.6791,
+     "30年": 2.111
+    },
+    {
+     "曲线名称": "中债国债收益率曲线",
+     "日期": "2026-09-23",
+     "3月": 1.1865,
+     "6月": 1.2002,
+     "1年": 1.2347,
+     "3年": 1.2894,
+     "5年": 1.4073,
+     "7年": 1.5046,
+     "10年": 1.6807,
+     "30年": 2.11
+    },
+    {
+     "曲线名称": "中债国债收益率曲线",
+     "日期": "2026-09-24",
+     "3月": 1.181,
+     "6月": 1.2102,
+     "1年": 1.2327,
+     "3年": 1.2893,
+     "5年": 1.4058,
+     "7年": 1.5012,
+     "10年": 1.6738,
+     "30年": 2.082
+    }
+   ],
+   "columns": [],
+   "rows": 0,
+   "sample": null,
+   "error": null
+  }
+ }
+}

@@ -1,0 +1,90 @@
+{
+ "meta": {
+  "date": "2026-09-25",
+  "window_days": 7,
+  "missing": []
+ },
+ "flash": [
+  {
+   "source": "东财全球快讯",
+   "time": "2026-09-26 17:47:00",
+   "title": "一周两次！伯克希尔逆势押注房地产？",
+   "summary": "【一周两次！伯克希尔逆势押注房地产？】当地时间9月25日，美国证券交易委员会（SEC）披露文件显示，伯克希尔·哈撒韦（以下简称伯克希尔）于9月23日至25日期间，累计买入约165.9万股莱纳房屋公司（LennarCorporation）A类普通股、20675股B类普通股。",
+   "url": "https://finance.eastmoney.com/a/202609263884401577.html"
+  }
+ ],
+ "notices": [
+  {
+   "code": "000001",
+   "name": "平安银行",
+   "date": "2026-09-22",
+   "title": "平安银行:关于2026年金融债券(第一期)发行完毕的公告",
+   "category": "其他",
+   "url": "https://data.eastmoney.com/notices/detail/000001/AN202609211829724767.html"
+  },
+  {
+   "code": "601658",
+   "name": "邮储银行",
+   "date": "2026-09-22",
+   "title": "邮储银行:中国邮政储蓄银行股份有限公司董事会决议公告",
+   "category": "其他",
+   "url": "https://data.eastmoney.com/notices/detail/601658/AN202609211829723466.html"
+  },
+  {
+   "code": "601658",
+   "name": "邮储银行",
+   "date": "2026-09-22",
+   "title": "邮储银行:中国国际金融股份有限公司、中信证券股份有限公司关于中国邮政储蓄银行股份有限公司关联交易的专项核查意见",
+   "category": "其他",
+   "url": "https://data.eastmoney.com/notices/detail/601658/AN202609211829723465.html"
+  },
+  {
+   "code": "002142",
+   "name": "宁波银行",
+   "date": "2026-09-23",
+   "title": "宁波银行:2026年9月23日投资者关系活动记录表",
+   "category": "其他",
+   "url": "https://data.eastmoney.com/notices/detail/002142/AN202609231829800163.html"
+  },
+  {
+   "code": "600036",
+   "name": "招商银行",
+   "date": "2026-09-23",
+   "title": "招商银行:招商银行股份有限公司关于董事任职资格核准及董事会专门委员会成员调整的公告",
+   "category": "人事变动",
+   "url": "https://data.eastmoney.com/notices/detail/600036/AN202609221829763391.html"
+  },
+  {
+   "code": "601288",
+   "name": "农业银行",
+   "date": "2026-09-24",
+   "title": "农业银行:农业银行关于非执行董事任职的公告",
+   "category": "人事变动",
+   "url": "https://data.eastmoney.com/notices/detail/601288/AN202609231829807598.html"
+  },
+  {
+   "code": "601939",
+   "name": "建设银行",
+   "date": "2026-09-24",
+   "title": "建设银行:建设银行关于境内2026年无固定期限资本债券(第二期)(债券通)发行完毕的公告",
+   "category": "再融资",
+   "url": "https://data.eastmoney.com/notices/detail/601939/AN202609231829807197.html"
+  },
+  {
+   "code": "601288",
+   "name": "农业银行",
+   "date": "2026-09-25",
+   "title": "农业银行:农业银行关于2026年二级资本债券(第三期)(债券通)发行完毕的公告",
+   "category": "再融资",
+   "url": "https://data.eastmoney.com/notices/detail/601288/AN202609241829867497.html"
+  },
+  {
+   "code": "601398",
+   "name": "工商银行",
+   "date": "2026-09-25",
+   "title": "工商银行:工商银行H股公告-2026中期报告",
+   "category": "其他",
+   "url": "https://data.eastmoney.com/notices/detail/601398/AN202609241829865848.html"
+  }
+ ]
+}
