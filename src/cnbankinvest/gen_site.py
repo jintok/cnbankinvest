@@ -18,15 +18,19 @@
 """
 import argparse
 import html
+import json
 import re
 from datetime import datetime
 from pathlib import Path
 
+from cnbankinvest import charts
 from cnbankinvest.paths import DOCS_DIR, SINGLE_DIR, WEEKLY_DIR
 
 # ---------------------------------------------------------------- 渲染器支持的语法
 # 标题 #..######、管道表（含对齐行）、-/* 无序列表（含 - [ ] 任务列表）、
-# 有序列表、> 引用、**粗体**、`代码`、`[文字](链接)`、--- 分隔线、普通段落。
+# 有序列表、> 引用、**粗体**、`代码`、[文字](链接)、--- 分隔线、普通段落、
+# ``` 围栏代码块（```chart 为图表 spec，经 charts.render_chart 渲染为内联 SVG，
+# 解析失败降级为 JSON 代码块）、普通代码围栏 → <pre><code>。
 # 限制：列表不嵌套（源文档均为扁平列表）；表格单元格单行（源文档均满足）。
 
 INTERNAL_MARKERS = ("【待人工撰写】", "【待人工修订】", "【人工补充】")
@@ -68,6 +72,10 @@ tr:nth-child(even) td { background:rgba(110,118,129,0.08); }
 hr { border:none; border-top:1px solid #30363d; margin:28px 0; }
 ul, ol { padding-left:24px; }
 li { margin:4px 0; }
+pre { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:10px 12px; overflow-x:auto; font-size:13px; }
+pre code { background:none; border:none; padding:0; font-size:inherit; }
+.chart { margin:12px 0 18px; padding:10px 12px 6px; background:#161b22; border:1px solid #30363d; border-radius:8px; }
+.chart svg { display:block; width:100%; height:auto; }
 footer { border-top:1px solid #30363d; color:#8b949e; font-size:13px; text-align:center; padding:20px; }
 """
 
@@ -176,6 +184,25 @@ def md_to_html(md: str) -> tuple[str, list]:
         if not line.strip():
             flush_para()
             i += 1
+            continue
+        if line.startswith("```"):  # 围栏代码块；```chart → 内联 SVG（失败降级 JSON 块）
+            flush_para()
+            lang = line[3:].strip().lower()
+            block = []
+            i += 1
+            while i < n and not lines[i].startswith("```"):
+                block.append(lines[i])
+                i += 1
+            i += 1  # 跳过收尾 ```（未闭合则至文末）
+            raw = "\n".join(block)
+            if lang == "chart":
+                try:
+                    svg = charts.render_chart(json.loads(raw))
+                    parts.append(f'<div class="chart">{svg}</div>')
+                except Exception:  # noqa: BLE001 — 图表失败不阻断整页渲染
+                    parts.append(f"<pre><code>{html.escape(raw)}</code></pre>")
+            else:
+                parts.append(f"<pre><code>{html.escape(raw)}</code></pre>")
             continue
         m = re.match(r"^(#{1,6})\s+(.*)$", line)
         if m:

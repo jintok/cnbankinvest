@@ -16,6 +16,7 @@ import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
+from cnbankinvest.charts import fence, relative_line_spec
 from cnbankinvest.paths import DATA_DIR, SINGLE_DIR, WATCHLIST_PATH as WATCHLIST
 
 TEMPLATE = Path(__file__).resolve().parent / "templates" / "single_bank_template.md"
@@ -197,6 +198,30 @@ def render_fundamentals(bank_fund: dict | None, gaps: list) -> str:
     if bank_gaps:
         parts.append("\n本行台账待填：" + "；".join(bank_gaps) + "。")
     return "\n".join(parts)
+
+
+# ---------------------------------------------------------------- 图表（```chart 围栏）
+
+def chart_relative(stock: dict, target: date):
+    """本行 vs 双基准归一化走势 spec：读 data/hist，近 120 交易日起点=100。"""
+    entries = [(f"a{stock['a_code']}", stock["name"]),
+               ("i399986", "中证银行"), ("i000300", "沪深300")]
+    return relative_line_spec("本行与基准相对走势（近120交易日，起点=100）", entries,
+                              target.isoformat())
+
+
+def chart_earnings(bank_fund: dict | None):
+    """营收/净利 YoY 近报告期分组柱状 spec（periods 最新在前 → 转时间正序）。"""
+    periods = (bank_fund or {}).get("analysis", {}).get("periods", [])
+    rows = [p for p in periods
+            if p.get("revenue_yoy_pct") is not None or p.get("profit_yoy_pct") is not None]
+    if len(rows) < 2:
+        return None
+    rows = rows[::-1]
+    return {"type": "grouped_bar", "title": "营收/净利同比增速（%，近报告期）",
+            "x": [p["period"] for p in rows],
+            "series": [{"name": "营收YoY", "vals": [p.get("revenue_yoy_pct") for p in rows]},
+                       {"name": "净利YoY", "vals": [p.get("profit_yoy_pct") for p in rows]}]}
 
 
 # ---------------------------------------------------------------- 公告与舆情
@@ -382,8 +407,10 @@ def main() -> None:
         "{{SHORT_VIEW}}": render_short_view(stock, market, news),
         "{{LONG_VIEW}}": render_long_view(stock, bank_fund, fund),
         "{{MARKET_PERFORMANCE}}": render_market_perf(stock, market),
+        "{{CHART_RELATIVE}}": fence(chart_relative(stock, target)),
         "{{VALUATION}}": render_valuation(stock, market),
         "{{FUNDAMENTALS}}": render_fundamentals(bank_fund, gaps),
+        "{{CHART_EARNINGS}}": fence(chart_earnings(bank_fund)),
         "{{NEWS_NOTICE}}": render_news_notice(name, args.code, news),
         "{{TRACKING_LIST}}": render_tracking(target, name, gaps),
     }

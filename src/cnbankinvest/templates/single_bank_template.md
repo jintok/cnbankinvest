@@ -31,6 +31,8 @@
 
 {{MARKET_PERFORMANCE}}
 
+{{CHART_RELATIVE}}
+
 ## 四、估值分析
 
 {{VALUATION}}
@@ -42,6 +44,8 @@
 ## 五、基本面分析
 
 {{FUNDAMENTALS}}
+
+{{CHART_EARNINGS}}
 
 <!-- 人工撰写: 结合定期报告点评基本面趋势。注意口径：同花顺按报告期累计值（Q2/Q3 为年初至今），ROE 为单季度；净息差/不良率/拨备覆盖率见 curated 台账行。 -->
 

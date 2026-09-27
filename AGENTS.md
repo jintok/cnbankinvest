@@ -40,6 +40,7 @@ scripts/refresh_weekly.sh --date 2026-09-25   # 复现指定日期；周末运�
 - `data/` — 原始快照（`market_*`/`news_*`/`fundamentals_*`/`hist/`）已 gitignore（可按需重拉）；`data/hist/*.json` 日线缓存为 **tmp+replace 原子写**，沿用此约定。
 - 手工维护、**脚本不得覆盖**：`data/regulatory_indicators.json`（行业监管指标，akshare 无源）、`data/bank_fundamentals.json`（个股专项的**覆盖层**，非空值优先于 `fin_indicators_*` 自动值）——缺项在报告中标「待填」属正常设计。
 - `src/cnbankinvest/templates/` — 周报/个股报告模板（随包内走）；`INTERFACE_NOTES.md` — akshare 接口实测笔记，**改数据源前必读**。
+- `src/cnbankinvest/charts.py` — 图表模块：生成器往 md 写 ` ```chart ` 围栏（JSON spec，构建辅助读 `data/hist/`），`gen_site` 渲染为内联 SVG（纯标准库、零 JS；解析失败降级为 JSON 代码块）。
 - 定期报告 PDF 链路：`report_fetcher`（东财公告→art_code→pdf.dfcfw.com 下载到 `data/reports/`）+ `report_extractor`（pdfplumber 锚点正则+众数，`report_anchors/{code}.json` 按行覆盖）。
 - `gen_site` 为纯标准库 Markdown 渲染器（无外部依赖、可离线），读 `output/weekly|single`，把【待人工撰写】等内部标记剥除后出网页版。
 

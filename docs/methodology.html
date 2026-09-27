@@ -41,6 +41,10 @@ tr:nth-child(even) td { background:rgba(110,118,129,0.08); }
 hr { border:none; border-top:1px solid #30363d; margin:28px 0; }
 ul, ol { padding-left:24px; }
 li { margin:4px 0; }
+pre { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:10px 12px; overflow-x:auto; font-size:13px; }
+pre code { background:none; border:none; padding:0; font-size:inherit; }
+.chart { margin:12px 0 18px; padding:10px 12px 6px; background:#161b22; border:1px solid #30363d; border-radius:8px; }
+.chart svg { display:block; width:100%; height:auto; }
 footer { border-top:1px solid #30363d; color:#8b949e; font-size:13px; text-align:center; padding:20px; }
 </style>
 </head>
@@ -63,7 +67,7 @@ footer { border-top:1px solid #30363d; color:#8b949e; font-size:13px; text-align
 <h2 id="toc-6">已知限制</h2>
 <ul><li>快讯仅 24–48 小时覆盖，周度事件以公告补齐；财联社接口无 URL。</li><li>指数级股息率不可得（akshare 无对应接口），指数股息率字段固定为空。</li><li>akshare 无商业银行净息差/不良率自动数据源，仅能手工维护。</li><li>南向资金周合计为近 5 个交易日口径（非自然周）。</li><li>10Y 国债取值需过滤「中债国债收益率曲线」（同接口另返回中短期票据/商业银行普通债曲线）。</li></ul>
 </main>
-<footer>生成时间：2026-09-27T21:56:22 ｜ 个人研究用途，数据来自公开接口，不构成投资建议</footer>
+<footer>生成时间：2026-09-27T22:13:18 ｜ 个人研究用途，数据来自公开接口，不构成投资建议</footer>
 <script>
 (function () {
   var KEY = 'cnbi-sidebar-open';

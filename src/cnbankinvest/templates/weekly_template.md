@@ -15,9 +15,13 @@
 
 {{DASHBOARD}}
 
+{{CHART_INDEX}}
+
 ## 三、本周变化
 
 {{WOW_CHANGES}}
+
+{{CHART_MOVES}}
 
 ## 四、观点初稿
 
@@ -30,6 +34,8 @@
 ## 五、A/H 因子
 
 {{AH_FACTOR}}
+
+{{CHART_AH}}
 
 ## 六、事件与政策
 

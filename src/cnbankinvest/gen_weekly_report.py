@@ -18,11 +18,15 @@ import statistics
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
+from cnbankinvest.charts import fence, relative_line_spec
 from cnbankinvest.paths import DATA_DIR, WEEKLY_DIR
 
 TEMPLATE = Path(__file__).resolve().parent / "templates" / "weekly_template.md"
 SPREAD_HISTORY = DATA_DIR / "spread_history.json"
 SPREAD_MIN_SAMPLES = 20  # 利差历史分位数最少样本数
+
+INDEX_CHART_SERIES = [("399986", "中证银行"), ("000300", "沪深300"),
+                      ("000922", "中证红利"), ("931039", "银行AH优选")]
 
 
 # ---------------------------------------------------------------- 工具
@@ -462,6 +466,34 @@ def update_spread_history(target: date, market: dict):
     return history, spread, pct_text
 
 
+# ---------------------------------------------------------------- 图表（```chart 围栏）
+
+def chart_index_relative(market: dict, target: date):
+    """指数归一化走势 spec：读 data/hist/i*.json，近 120 交易日起点=100。"""
+    syms = {i["symbol"] for i in market["indexes"]}
+    entries = [(f"i{sym}", nm) for sym, nm in INDEX_CHART_SERIES if sym in syms]
+    return relative_line_spec("指数相对走势（近120交易日，起点=100）", entries,
+                              target.isoformat())
+
+
+def chart_weekly_moves(market: dict):
+    items = [{"name": s["name"], "value": s["a_wtd_pct"]}
+             for s in market["stocks"] if s.get("a_wtd_pct") is not None]
+    if not items:
+        return None
+    items.sort(key=lambda it: it["value"], reverse=True)
+    return {"type": "bar", "title": "核心池 A 股周涨跌幅（%）", "items": items}
+
+
+def chart_ah_premium(market: dict):
+    items = [{"name": s["name"], "value": s["ah_premium_pct"]}
+             for s in market["stocks"] if s.get("ah_premium_pct") is not None]
+    if not items:
+        return None
+    items.sort(key=lambda it: it["value"])
+    return {"type": "bar", "title": "A/H 溢价率（%，负值=H股折价）", "items": items}
+
+
 # ---------------------------------------------------------------- 附录
 
 def render_appendix_market(market: dict) -> str:
@@ -594,6 +626,9 @@ def main() -> None:
         "{{WOW_CHANGES}}": render_wow(market, ah_stats),
         "{{VIEW_DRAFTS}}": render_view_drafts(market, news, fund, signals),
         "{{AH_FACTOR}}": render_ah_factor(market, ah_stats),
+        "{{CHART_INDEX}}": fence(chart_index_relative(market, target)),
+        "{{CHART_MOVES}}": fence(chart_weekly_moves(market)),
+        "{{CHART_AH}}": fence(chart_ah_premium(market)),
         "{{EVENTS_POLICY}}": render_events_policy(market, news, fund),
         "{{FUND_SUMMARY}}": render_fund_summary(fund),
         "{{WEEKLY_FOCUS}}": render_weekly_focus(target),
