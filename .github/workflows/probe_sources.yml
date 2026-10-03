@@ -1,0 +1,60 @@
+# 数据源可达性探针（手动触发）：实测 GitHub runner 对各国内数据源的访问情况。
+# 结果用于决定 weekly_refresh.yml 定时任务的可行性；结论记录到 INTERFACE_NOTES.md。
+name: probe-sources
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: 安装依赖（uv.lock 锁版）
+        run: uv sync
+
+      - name: 逐源探测（单发不重试，打印 ✅/❌ 与耗时）
+        run: |
+          .venv/bin/python - <<'EOF'
+          import socket, time
+          socket.setdefaulttimeout(30)
+          import akshare as ak
+
+          PROBES = [
+              ("新浪 A股日线",   lambda: ak.stock_zh_a_daily(symbol="sh601398", start_date="20260901", end_date="20261002", adjust="qfq")),
+              ("新浪 H股日线",   lambda: ak.stock_hk_daily(symbol="01398", adjust="qfq")),
+              ("中证指数日线",   lambda: ak.stock_zh_index_hist_csindex(symbol="000300", start_date="20260901", end_date="20261002")),
+              ("中证指数估值",   lambda: ak.stock_zh_index_value_csindex(symbol="399986")),
+              ("申万指数日线",   lambda: ak.index_hist_sw(symbol="801780", period="day")),
+              ("中债收益率曲线", lambda: ak.bond_china_yield(start_date="20260920", end_date="20261002")),
+              ("Shibor 1W",     lambda: ak.rate_interbank(market="上海银行同业拆借市场", symbol="Shibor人民币", indicator="1周")),
+              ("LPR",           lambda: ak.macro_china_lpr()),
+              ("南向资金",       lambda: ak.stock_hsgt_hist_em(symbol="南向资金")),
+              ("东财个股估值",   lambda: ak.stock_value_em(symbol="601398")),
+              ("东财 F10 主要指标", lambda: ak.stock_financial_analysis_indicator_em(symbol="601398.SH", indicator="按报告期")),
+              ("东财分红送配",   lambda: ak.stock_fhps_detail_em(symbol="601398")),
+              ("新浪分红历史",   lambda: ak.stock_history_dividend_detail(symbol="601398", indicator="分红")),
+              ("中行汇率牌价",   lambda: ak.currency_boc_sina(symbol="港币", start_date="20260920", end_date="20261002")),
+              ("同花顺财务摘要", lambda: ak.stock_financial_abstract_ths(symbol="601398", indicator="按报告期")),
+              ("社融增量",       lambda: ak.macro_china_shrzgm()),
+              ("新增人民币贷款", lambda: ak.macro_rmb_loan()),
+          ]
+          ok = 0
+          for name, fn in PROBES:
+              t0 = time.time()
+              try:
+                  df = fn()
+                  dt = time.time() - t0
+                  print(f"✅ {name}: {df.shape} 耗时 {dt:.1f}s", flush=True)
+                  ok += 1
+              except Exception as e:
+                  dt = time.time() - t0
+                  print(f"❌ {name}: {type(e).__name__}: {str(e)[:120]} 耗时 {dt:.1f}s", flush=True)
+              time.sleep(1)
+          print(f"\n== 汇总: {ok}/{len(PROBES)} 源可达 ==")
+          EOF
