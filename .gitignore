@@ -3,12 +3,13 @@
 __pycache__/
 *.pyc
 
-# 原始行情/快照缓存：可按需重拉，不入库（手工台账与 spread_history.json 除外）
+# 原始行情/快照缓存：可按需重拉，不入库（spread_history.json 汇总序列除外）
 data/market_*.json
 data/news_*.json
 data/fundamentals_*.json
 data/fin_indicators_*.json
 data/hist/
+data/valuation_hist/
 data/reports/
 
 # 凭证/机密

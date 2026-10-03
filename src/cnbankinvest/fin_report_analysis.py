@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-"""银行基本面定期分析: 同花顺财务摘要(akshare) + 手工台账 → 结构化 JSON。
+"""银行基本面定期分析: 同花顺财务摘要(akshare) + 专项指标自动层 → 结构化 JSON。
 
 用法:
     .venv/bin/python -m cnbankinvest.fin_report_analysis [--date YYYY-MM-DD] [--out DIR]
 
 输入:
     watchlist.json                       股票池(12 家银行)
-    data/regulatory_indicators.json      金融监管总局行业指标(手工维护)
-    data/bank_fundamentals.json          个股关键指标(手工维护)
+    data/fin_indicators_*.json           专项指标自动层(fin_indicators_puller 产出)
 
 输出:
     {--out}/fundamentals_{date}.json
@@ -15,8 +14,8 @@
 说明:
     - 同花顺(ths)财务摘要数值为带单位字符串("1736.82亿"/"3.32%"), 需解析;
       ROE 为单季度口径。
-    - akshare 无净息差/不良率/拨备覆盖率接口, 这部分只透传手工台账并在
-      curated_gaps 里提示待填报。
+    - 净息差/不良率/拨备覆盖率/资本充足率/分红率/规模/每股/逾期等专项指标
+      全部来自 fin_indicators_puller 自动层(东财 F10+分红送配), 透传进 indicators 字段。
     - 社融/新增贷款在运行时探针 dir(ak) 候选接口, 第一个可用者胜。
 """
 import argparse
@@ -28,7 +27,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from cnbankinvest.paths import CURATED_PATH, DATA_DIR, REGULATORY_PATH, WATCHLIST_PATH
+from cnbankinvest.paths import DATA_DIR, WATCHLIST_PATH
 
 THS_RETRIES = 3          # 同花顺调用重试次数(含首次)
 THS_SLEEP = 2.0          # 同花顺限频: 调用间隔与重试退避均 >= 2s
@@ -37,18 +36,6 @@ PROBE_MAX_CALLS = 4      # 社融/贷款探针最多尝试接口数
 
 # 报告期月份 → 季度标签
 MD_TO_Q = {"03-31": "Q1", "06-30": "Q2", "09-30": "Q3", "12-31": "Q4"}
-
-REG_LABELS = [
-    ("nim_pct", "净息差"),
-    ("npl_ratio_pct", "不良率"),
-    ("provision_coverage_pct", "拨备覆盖率"),
-    ("car_pct", "资本充足率"),
-    ("profit_yoy_pct", "利润同比"),
-]
-CURATED_FIELDS = [
-    "report", "nim_pct", "npl_ratio_pct", "provision_coverage_pct",
-    "cet1_pct", "payout_ratio_pct",
-]
 
 
 def parse_num(raw, pct=False):
@@ -91,27 +78,6 @@ def yoy_pct(cur, prev):
     if cur is None or prev is None or abs(prev) < 1e-12:
         return None
     return round((cur / prev - 1.0) * 100.0, 2)
-
-
-def trend_note(yoy_desc):
-    """根据营收同比序列(时间升序)生成趋势描述, 至少 3 个点否则 "样本不足"。"""
-    vals = [v for v in yoy_desc if v is not None]
-    if len(vals) < 3:
-        return "样本不足"
-    diffs = [vals[i + 1] - vals[i] for i in range(len(vals) - 1)]
-    signs = [1 if d > 1e-9 else (-1 if d < -1e-9 else 0) for d in diffs]
-    n = 1
-    for i in range(len(signs) - 2, -1, -1):
-        if signs[i] == signs[-1]:
-            n += 1
-        else:
-            break
-    word = {1: "上行", -1: "下行", 0: "持平"}[signs[-1]]
-    if n == len(signs):
-        return f"营收增速连续{n}期{word}"
-    if n >= 2:
-        return f"营收增速最近{n}期{word}"
-    return "营收增速波动"
 
 
 def fetch_ths_abstract(a_code):
@@ -259,16 +225,6 @@ def find_latest_indicators(target_date: str):
     return load_json(f), f.stem.rsplit("_", 1)[-1]
 
 
-AUTO_FIELDS_MAP = {
-    "report": "period",
-    "nim_pct": "nim_pct",
-    "npl_ratio_pct": "npl_ratio_pct",
-    "provision_coverage_pct": "provision_coverage_pct",
-    "cet1_pct": "cet1_pct",
-    "payout_ratio_pct": "payout_ratio_pct",
-}
-
-
 def atomic_write_json(path, obj):
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -286,105 +242,51 @@ def main():
 
     missing = []
     watchlist = load_json(WATCHLIST_PATH)["stocks"]
-    regulatory = load_json(REGULATORY_PATH)
-    curated_all = load_json(CURATED_PATH)
-    curated_by_code = {b["a_code"]: b for b in curated_all.get("banks", [])}
-
-    # 行业监管指标: 最新一期 = 第一个有非空字段的 item; 全部为空则 latest_period=null
-    reg_items = regulatory.get("items", [])
-    VALUE_FIELDS = [f for f, _ in REG_LABELS]
-
-    def has_value(item):
-        return any(item.get(f) is not None for f in VALUE_FIELDS)
-
-    latest_item = next((it for it in reg_items if has_value(it)), None)
-    trend = [
-        {"period": it["period"], **{f: it[f] for f in VALUE_FIELDS if it.get(f) is not None}}
-        for it in reg_items if has_value(it)
-    ]
-    industry_regulatory = {
-        "latest_period": latest_item["period"] if latest_item else None,
-        "latest": latest_item,
-        "trend": trend,
-    }
 
     # credit_macro 运行时探针
     credit_macro, probe_notes = probe_credit_macro(missing)
 
-    # 银行专项指标自动层（fin_indicators_puller 缓存，手工台账值优先）
+    # 银行专项指标自动层（fin_indicators_puller 缓存）
     indicators, indicators_as_of = find_latest_indicators(args.date)
     auto_by_code = {b.get("a_code"): b for b in (indicators or {}).get("banks", [])}
     if indicators_as_of is None:
         missing.append("fin_indicators: 无可用缓存（可运行 fin_indicators_puller）")
 
-    # 个股: 同花顺财务摘要
+    # 个股: 同花顺财务摘要 + 专项指标自动层透传
     banks_out = []
     for st in watchlist:
         name, a_code = st["name"], st["a_code"]
-        analysis = {"periods": [], "latest": None, "trend_note": ""}
+        analysis = {"periods": [], "latest": None}
         try:
             records = fetch_ths_abstract(a_code)
             analysis = analyze_bank(records)
-            analysis["trend_note"] = trend_note(
-                [p["revenue_yoy_pct"] for p in reversed(analysis["periods"])]
-            )
             if not analysis["periods"]:
                 missing.append(f"{name}({a_code}) 财务摘要无可用报告期")
         except Exception as e:  # noqa: BLE001
             missing.append(f"{name}({a_code}) 同花顺财务摘要获取失败: {type(e).__name__} {str(e)[:60]}")
         time.sleep(THS_SLEEP)
 
-        # curated 生效层: 手工台账非空值优先, 其次自动指标; sources 记录每字段来源
-        cur = curated_by_code.get(a_code)
         auto_rec = auto_by_code.get(a_code) or {}
-        curated, sources = {}, {}
-        for f in CURATED_FIELDS:
-            manual = cur.get(f) if cur else None
-            auto_v = auto_rec.get(AUTO_FIELDS_MAP[f])
-            if manual is not None:
-                curated[f], sources[f] = manual, "curated"
-            elif auto_v is not None:
-                curated[f], sources[f] = auto_v, "auto"
-            else:
-                curated[f], sources[f] = None, None
         banks_out.append({
             "name": name,
             "a_code": a_code,
             "segment": st.get("segment"),
             "analysis": analysis,
-            "curated": curated,
-            "indicators_auto": {
+            "indicators": auto_rec,
+            "indicators_meta": {
                 "as_of": indicators_as_of,
-                "fields": sources,
                 "period": auto_rec.get("period"),
                 "payout_fy": auto_rec.get("payout_fy"),
             },
         })
-
-    # curated_gaps: 最新监管期的空字段 + 各银行生效层仍缺 report/nim 的条目, 封顶 20 条
-    gaps = []
-    reg_target = latest_item if latest_item else (reg_items[0] if reg_items else None)
-    if reg_target:
-        for f, label in REG_LABELS:
-            if reg_target.get(f) is None:
-                gaps.append(f"监管指标 {reg_target['period']} {label}待填报")
-    for b in banks_out:
-        eff = b["curated"]
-        if eff.get("report") is None:
-            gaps.append(f"{b['name']} 最新报告期待填报")
-        if eff.get("nim_pct") is None:
-            gaps.append(f"{b['name']} 净息差待填报")
-    gaps = gaps[:20]
 
     result = {
         "meta": {
             "date": args.date,
             "generated_at": datetime.now().isoformat(timespec="seconds"),
             "missing": missing,
-            "curated_gaps": gaps,
             "fin_indicators_as_of": indicators_as_of,
         },
-        "industry_regulatory": industry_regulatory,
         "credit_macro": credit_macro,
         "banks": banks_out,
     }

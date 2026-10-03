@@ -4,7 +4,8 @@
     {"symbol": "399986", "name": "中证银行", "role": "bank_index"},
     {"symbol": "801780", "name": "申万银行", "role": "bank_index"},
     {"symbol": "000922", "name": "中证红利", "role": "dividend_style"},
-    {"symbol": "931039", "name": "中证银行AH优选", "role": "ah_bank"}
+    {"symbol": "931039", "name": "中证银行AH优选", "role": "ah_bank"},
+    {"symbol": "932305", "name": "智选高股息", "role": "dividend_style"}
   ],
   "stocks": [
     {"name": "工商银行", "a_code": "601398", "h_code": "01398", "segment": "国有大行"},

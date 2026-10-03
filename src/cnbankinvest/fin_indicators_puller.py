@@ -6,8 +6,10 @@
     银行专项列：NET_INTEREST_MARGIN(净息差) / NON_PERFORMING_LOAN(不良余额,元) /
     GROSSLOANS(贷款总额,元) / LOAN_PROVISION_RATIO(拨贷比) / HXYJBCZL(核心一级) /
     FIRST_ADEQUACY_RATIO(一级) / NEWCAPITALADER(资本充足率) / TOTALDEPOSITS(存款) /
-    LTDRR(贷存比,小数) / PARENTNETPROFIT / TOTALOPERATEREVE
-    派生：不良率 = 不良余额/贷款总额；拨备覆盖率 = 拨贷比/不良率（半年度口径，因拨贷比半年披露）
+    LTDRR(贷存比,小数) / PARENTNETPROFIT / TOTALOPERATEREVE /
+    EPSJB(基本每股收益) / BPS(每股净资产) / OVERDUE_LOANS(逾期贷款,元)
+    派生：不良率 = 不良余额/贷款总额；拨备覆盖率 = 拨贷比/不良率（半年度口径，因拨贷比半年披露）；
+    逾期率 = 逾期贷款/贷款总额；存款/贷款 YoY = 对上年同报告期自算
 - 东财分红送配详情 : ak.stock_fhps_detail_em（每10股现金分红 + 每股收益）
     派生：分红率 = 财年(中期+期末)每股分红合计 ÷ 年报每股收益
 
@@ -15,8 +17,7 @@
     .venv/bin/python -m cnbankinvest.fin_indicators_puller [--date 2026-09-25] [--out data目录]
 
 输出：data/fin_indicators_YYYY-MM-DD.json
-（fin_report_analysis 会读 ≤ --date 的最新一份，合并进 fundamentals 的 curated 生效层，
-  手工台账 data/bank_fundamentals.json 的非空值仍然优先。）
+（fin_report_analysis 会读 ≤ --date 的最新一份，合并进 fundamentals 的 indicators 层。）
 """
 import argparse
 import json
@@ -98,6 +99,8 @@ def build_bank_record(a_code: str) -> dict:
         ldr = num(row.get("LTDRR"))
         npf = num(row.get("PARENTNETPROFIT"))                  # 元
         rev = num(row.get("TOTALOPERATEREVE"))                 # 元
+        overdue = num(row.get("OVERDUE_LOANS"))                # 元
+        deposits = num(row.get("TOTALDEPOSITS"))               # 元
         return {
             "period": period_from_row(row),
             "report_date": dstr(row.get("REPORT_DATE")),
@@ -105,14 +108,18 @@ def build_bank_record(a_code: str) -> dict:
             "nim_pct": num(row.get("NET_INTEREST_MARGIN")),
             "nim_spread_pct": num(row.get("NET_INTEREST_SPREAD")),
             "npl_ratio_pct": round(npl_ratio, 2) if npl_ratio else None,
+            "overdue_ratio_pct": (round(overdue / loans * 100, 2)
+                                  if (overdue and loans) else None),
             "provision_coverage_pct": round(coverage, 1) if coverage else None,
             "loan_provision_ratio_pct": lpr,
             "cet1_pct": num(row.get("HXYJBCZL")),
             "tier1_pct": num(row.get("FIRST_ADEQUACY_RATIO")),
             "car_pct": num(row.get("NEWCAPITALADER")),
+            "eps": num(row.get("EPSJB")),
+            "bps": num(row.get("BPS")),
             "gross_loans_yi": round(loans / 1e8, 2) if loans else None,
             "npl_amt_yi": round(npl_amt / 1e8, 2) if npl_amt else None,
-            "deposits_yi": (lambda d: round(d / 1e8, 2) if d else None)(num(row.get("TOTALDEPOSITS"))),
+            "deposits_yi": round(deposits / 1e8, 2) if deposits else None,
             "ldr_pct": round(ldr * 100, 2) if ldr else None,
             "net_profit_yi": round(npf / 1e8, 2) if npf else None,
             "revenue_yi": round(rev / 1e8, 2) if rev else None,
@@ -125,9 +132,25 @@ def build_bank_record(a_code: str) -> dict:
     if not periods:
         raise RuntimeError("主要指标无报告期数据")
     latest = periods[0]
+    # 规模 YoY：全历史中对上年同报告期（MM-DD 相同、年份 −1）自算
+    by_md_year = {}
+    for r in recs:
+        rd = dstr(r.get("REPORT_DATE"))
+        if len(rd) >= 10:
+            by_md_year[(rd[5:10], rd[:4])] = r
+    rd = latest.get("report_date") or ""
+    if len(rd) >= 10:
+        prev = by_md_year.get((rd[5:10], str(int(rd[:4]) - 1)))
+        if prev:
+            for cur_key, col, out_key in (("deposits_yi", "TOTALDEPOSITS", "deposits_yoy_pct"),
+                                          ("gross_loans_yi", "GROSSLOANS", "loans_yoy_pct")):
+                prev_v = num(prev.get(col))
+                cur_v = latest.get(cur_key)
+                if cur_v and prev_v:
+                    latest[out_key] = round((cur_v / (prev_v / 1e8) - 1) * 100, 2)
     history = [{k: p[k] for k in
                 ("period", "nim_pct", "npl_ratio_pct", "provision_coverage_pct",
-                 "cet1_pct", "car_pct")} for p in periods]
+                 "cet1_pct", "car_pct", "eps", "bps")} for p in periods]
     return latest, history
 
 

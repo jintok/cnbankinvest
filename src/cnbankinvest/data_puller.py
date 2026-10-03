@@ -9,11 +9,14 @@
 - 估值      : ak.stock_value_em（东财 datacenter-web，重试+间隔）
 - 分红      : ak.stock_history_dividend_detail（新浪，派息单位=元/10股）
 - 汇率      : ak.currency_boc_sina（中行牌价，折算价/100 = CNY/HKD）
-- 利率      : ak.bond_china_yield（中债，10Y国债）
+- 利率      : ak.bond_china_yield（中债，10Y/3Y国债 + 商业银行普通债AAA 3Y→信用利差）
               ak.rate_interbank（Shibor 1周）
+              ak.macro_china_lpr（LPR 1Y/5Y，月度）
 - 南向资金  : ak.stock_hsgt_hist_em（南向资金）
+- 指数估值  : ak.stock_zh_index_value_csindex（中证官网，股息率2口径，仅近1个月）
 
 日线收盘价按 symbol 缓存在 data/hist/{symbol}.json，每次运行增量合并（tmp+replace 原子写）。
+个股 PB 日频与分红记录缓存在 data/valuation_hist/{code}.json（同原子写约定）。
 
 用法：
     .venv/bin/python -m cnbankinvest.data_puller [--date 2026-09-25] [--out data目录]
@@ -125,6 +128,31 @@ def update_hist(out_dir: Path, key: str, source: str, new_rows: dict) -> dict:
     cache["source"] = source
     save_hist(out_dir, key, source, cache["rows"])
     return cache["rows"]
+
+
+# ---------------------------------------------------------------- 估值历史缓存（valuation_hist/{code}.json）
+
+def load_valuation_hist(out_dir: Path, code: str) -> dict:
+    p = out_dir / "valuation_hist" / f"{code}.json"
+    if p.exists():
+        try:
+            return json.loads(p.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            log(f"  ⚠️ 估值缓存损坏，重新积累: {p.name}")
+    return {"pb_rows": [], "dividends": []}
+
+
+def save_valuation_hist(out_dir: Path, code: str, pb_rows: dict, dividends: list) -> None:
+    """pb_rows: {date_iso: pb}；dividends: [{ex, per_10}]。tmp+replace 原子写。"""
+    d = out_dir / "valuation_hist"
+    d.mkdir(parents=True, exist_ok=True)
+    p = d / f"{code}.json"
+    obj = {"pb_rows": sorted(pb_rows.items()),
+           "dividends": sorted({x["ex"]: x for x in dividends}.values(),
+                               key=lambda x: x["ex"])}
+    tmp = p.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(obj, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(p)
 
 
 # ---------------------------------------------------------------- 序列拉取
@@ -240,16 +268,26 @@ def pull_fx(target: date):
 
 
 def pull_rates(target: date):
-    out = {"cn10y": None, "cn10y_prev_week": None, "shibor_1w": None}
-    # 中债 10Y 国债（过滤国债曲线）
+    out = {"cn10y": None, "cn10y_prev_week": None, "shibor_1w": None,
+           "cn3y": None, "bank3y": None, "credit_spread_3y": None,
+           "lpr_1y": None, "lpr_5y": None, "lpr_date": None,
+           "lpr_1y_change_bp": None, "lpr_5y_change_bp": None}
+    # 中债国债（10Y/3Y）+ 商业银行普通债(AAA) 3Y → 信用利差
     try:
         df = ak.bond_china_yield(start_date=ymd(target - timedelta(days=12)),
                                  end_date=ymd(target))
+        df = df[df["日期"].astype(str) <= target.isoformat()]
         gov = df[df["曲线名称"] == "中债国债收益率曲线"]
-        gov = gov[gov["日期"].astype(str) <= target.isoformat()]
         series = {iso(r["日期"]): float(r["10年"]) for _, r in gov.iterrows()}
         out["cn10y"] = close_on_or_before(series, target)
         out["cn10y_prev_week"] = close_on_or_before(series, target - timedelta(days=7))
+        gov3 = {iso(r["日期"]): float(r["3年"]) for _, r in gov.iterrows()}
+        out["cn3y"] = close_on_or_before(gov3, target)
+        bank = df[df["曲线名称"] == "中债商业银行普通债收益率曲线(AAA)"]
+        bank3 = {iso(r["日期"]): float(r["3年"]) for _, r in bank.iterrows()}
+        out["bank3y"] = close_on_or_before(bank3, target)
+        if out["cn3y"] is not None and out["bank3y"] is not None:
+            out["credit_spread_3y"] = round(out["bank3y"] - out["cn3y"], 4)
     except Exception as e:  # noqa: BLE001
         note_missing("rates:bond_china_yield", e)
     time.sleep(CALL_SLEEP)
@@ -261,6 +299,24 @@ def pull_rates(target: date):
             out["shibor_1w"] = float(df.iloc[-1]["利率"])
     except Exception as e:  # noqa: BLE001
         note_missing("rates:rate_interbank", e)
+    time.sleep(CALL_SLEEP)
+    # LPR（月度，每月 20 日；取 ≤ target 最近两期算变动）
+    try:
+        df = ak.macro_china_lpr()
+        df = df[df["TRADE_DATE"].astype(str) <= target.isoformat()]
+        df = df[df["LPR1Y"].notna()].tail(2)
+        if len(df):
+            last = df.iloc[-1]
+            out["lpr_date"] = str(last["TRADE_DATE"])[:10]
+            out["lpr_1y"] = float(last["LPR1Y"])
+            out["lpr_5y"] = float(last["LPR5Y"]) if pd.notna(last["LPR5Y"]) else None
+            if len(df) == 2:
+                prev = df.iloc[0]
+                out["lpr_1y_change_bp"] = round((float(last["LPR1Y"]) - float(prev["LPR1Y"])) * 100, 0)
+                if out["lpr_5y"] is not None and pd.notna(prev["LPR5Y"]):
+                    out["lpr_5y_change_bp"] = round((float(last["LPR5Y"]) - float(prev["LPR5Y"])) * 100, 0)
+    except Exception as e:  # noqa: BLE001
+        note_missing("rates:macro_china_lpr", e)
     return out
 
 
@@ -279,10 +335,24 @@ def pull_southbound(target: date):
     return out
 
 
+def pull_index_valuation(symbol: str, target: date) -> dict:
+    """中证官网指数估值（股息率2口径，仅近1个月）：取 ≤ target 最新一日。
+    申万指数（801780）非中证系，调用方应跳过。"""
+    df = call_em(ak.stock_zh_index_value_csindex, symbol=symbol)
+    df = df[df["日期"].astype(str) <= target.isoformat()]
+    if not len(df):
+        return {"index_val_date": None, "index_pe": None, "index_div_yield": None}
+    r = df.iloc[0]  # 接口按日期降序返回
+    return {"index_val_date": str(r["日期"])[:10],
+            "index_pe": float(r["市盈率2"]) if pd.notna(r["市盈率2"]) else None,
+            "index_div_yield": float(r["股息率2"]) if pd.notna(r["股息率2"]) else None}
+
+
 def pull_index(symbol: str, name: str, role: str, target: date, out_dir: Path):
     key = f"i{symbol}"
     item = {"symbol": symbol, "name": name, "role": role,
-            "close": None, "wtd_pct": None, "ytd_pct": None, "div_yield_ttm": None}
+            "close": None, "wtd_pct": None, "ytd_pct": None,
+            "index_val_date": None, "index_pe": None, "index_div_yield": None}
     try:
         got = fetch_index_series(symbol, target)
         rows = update_hist(out_dir, key, got["source"], got["rows"])
@@ -292,40 +362,48 @@ def pull_index(symbol: str, name: str, role: str, target: date, out_dir: Path):
         item["ytd_pct"] = pct(item["close"], prev_year_end)
     except Exception as e:  # noqa: BLE001
         note_missing(f"index:{symbol}", e)
+    if symbol != "801780":  # 申万指数无中证估值
+        try:
+            item.update(pull_index_valuation(symbol, target))
+        except Exception as e:  # noqa: BLE001
+            note_missing(f"index_valuation:{symbol}", e)
     return item
 
 
 def pull_valuation(code: str, target: date):
-    """东财 datacenter-web：PB / PE(TTM) / 总市值(亿元)，取 <= target 最新一日。"""
+    """东财 datacenter-web：PB / PE(TTM) / 总市值(亿元)，取 <= target 最新一日。
+    同时返回全历史 PB 序列 {date_iso: pb} 供估值缓存合并。"""
     df = call_em(ak.stock_value_em, symbol=code)
+    pb_rows = {str(r["数据日期"])[:10]: float(r["市净率"])
+               for _, r in df.iterrows() if pd.notna(r["市净率"])}
     df = df[df["数据日期"].astype(str) <= target.isoformat()]
     if not len(df):
-        return None, None, None
+        return None, None, None, pb_rows
     r = df.iloc[-1]
     pb = float(r["市净率"]) if pd.notna(r["市净率"]) else None
     pe = float(r["PE(TTM)"]) if pd.notna(r["PE(TTM)"]) else None
     mv = round(float(r["总市值"]) / 1e8, 1) if pd.notna(r["总市值"]) else None
-    return pb, pe, mv
+    return pb, pe, mv, pb_rows
 
 
 def pull_div_yield(code: str, target: date, a_close):
-    """近365天现金分红(除权除息日口径) / 现价。派息单位=元/10股。"""
-    if a_close in (None, 0):
-        return None
+    """近365天现金分红(除权除息日口径) / 现价。派息单位=元/10股。
+    同时返回全量分红记录 [{ex, per_10}] 供估值缓存合并。"""
     df = ak.stock_history_dividend_detail(symbol=code, indicator="分红")
-    if "除权除息日" not in df.columns:
-        return None
-    start = target - timedelta(days=365)
-    total = 0.0
-    for _, r in df.iterrows():
-        ex = r["除权除息日"]
-        if pd.isna(ex):
-            continue
-        ex_s = iso(ex)
-        if start.isoformat() < ex_s <= target.isoformat():
+    divs = []
+    if "除权除息日" in df.columns:
+        for _, r in df.iterrows():
+            ex = r["除权除息日"]
             v = r.get("派息")
-            total += float(v) / 10 if pd.notna(v) else 0.0
-    return round(total / a_close * 100, 2) if total > 0 else 0.0
+            if pd.isna(ex) or pd.isna(v):
+                continue
+            divs.append({"ex": iso(ex), "per_10": float(v)})
+    if a_close in (None, 0):
+        return None, divs
+    start = target - timedelta(days=365)
+    total = sum(d["per_10"] / 10 for d in divs
+                if start.isoformat() < d["ex"] <= target.isoformat())
+    return (round(total / a_close * 100, 2) if total > 0 else 0.0), divs
 
 
 def pull_stock(st: dict, target: date, out_dir: Path, cny_per_hkd):
@@ -334,7 +412,7 @@ def pull_stock(st: dict, target: date, out_dir: Path, cny_per_hkd):
             "h_close": None, "h_wtd_pct": None, "ah_premium_pct": None,
             "pb": None, "pe_ttm": None, "total_mv_yi": None, "div_yield_ttm": None}
 
-    # A股：日线 + 估值 + 股息率
+    # A股：日线 + 估值 + 股息率（PB 历史与分红记录合并入 valuation_hist 缓存）
     try:
         rows = update_hist(out_dir, f"a{st['a_code']}", "sina", fetch_a_daily(st["a_code"], target))
         item["a_close"] = close_on_or_before(rows, target)
@@ -342,15 +420,21 @@ def pull_stock(st: dict, target: date, out_dir: Path, cny_per_hkd):
     except Exception as e:  # noqa: BLE001
         note_missing(f"stock:{st['a_code']}:a_daily", e)
     time.sleep(CALL_SLEEP)
+    cache = load_valuation_hist(out_dir, st["a_code"])
+    pb_rows = {d: v for d, v in cache.get("pb_rows", [])}
+    dividends = cache.get("dividends", [])
     try:
-        item["pb"], item["pe_ttm"], item["total_mv_yi"] = pull_valuation(st["a_code"], target)
+        item["pb"], item["pe_ttm"], item["total_mv_yi"], new_pb = pull_valuation(st["a_code"], target)
+        pb_rows.update(new_pb)
     except Exception as e:  # noqa: BLE001
         note_missing(f"stock:{st['a_code']}:valuation", e)
     time.sleep(EM_SLEEP)
     try:
-        item["div_yield_ttm"] = pull_div_yield(st["a_code"], target, item["a_close"])
+        item["div_yield_ttm"], dividends = pull_div_yield(st["a_code"], target, item["a_close"])
     except Exception as e:  # noqa: BLE001
         note_missing(f"stock:{st['a_code']}:dividend", e)
+    if pb_rows or dividends:
+        save_valuation_hist(out_dir, st["a_code"], pb_rows, dividends)
     time.sleep(CALL_SLEEP)
 
     # H股：仅日线

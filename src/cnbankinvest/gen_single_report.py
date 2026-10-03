@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""单家银行个股研究报告生成器。
+"""单家银行个股研究报告生成器（纯自动「指标 + 图表」，方法论 v20261003 结构）。
 
-读取 data/ 下 ≤ --date 的最新 market_*.json / news_*.json / fundamentals_*.json，
+读取 data/ 下 ≤ --date 的最新 market_*.json / fundamentals_*.json，
 按 watchlist.json 解析 --code（A股代码）对应标的，填充包内 templates/single_bank_template.md，
 写出 output/single/{名称}_银行个股报告_{yyyymmdd}.md（tmp+replace 原子写）。
-纯标准库实现（不联网、不依赖 akshare）。
+纯标准库实现（不联网、不依赖 akshare）；估值分位/52 周/PB-ROE 经 cnbankinvest.metrics
+读 data/valuation_hist/ 与 data/hist/ 缓存离线计算。
 
 用法：
     .venv/bin/python -m cnbankinvest.gen_single_report --code 600036 [--date 2026-09-25] [--out 输出目录]
@@ -13,17 +14,19 @@ import argparse
 import json
 import statistics
 import sys
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from pathlib import Path
 
-from cnbankinvest import methodology
+from cnbankinvest import methodology, metrics
 from cnbankinvest.charts import fence, relative_line_spec
 from cnbankinvest.paths import DATA_DIR, SINGLE_DIR, WATCHLIST_PATH as WATCHLIST
 
 TEMPLATE = Path(__file__).resolve().parent / "templates" / "single_bank_template.md"
 
 NEAR_THRESHOLD = 0.05   # 与中位数偏离 ±5% 以内视为「接近」
-CALENDAR_DAYS = 30      # 跟踪清单规则日历的展望天数
+
+# THS 报告期标签 ↔ F10 报告期名（用于把 EPS/BVPS 并入趋势表）
+Q_TO_F10 = {"Q1": "一季报", "Q2": "中报", "Q3": "三季报", "Q4": "年报"}
 
 
 # ---------------------------------------------------------------- 工具
@@ -36,7 +39,8 @@ def dash(x, nd=2, sign=False):
         v = float(x)
     except (TypeError, ValueError):
         return "—"
-    return f"{v:+.{nd}f}" if sign else f"{v:.{nd}f}"
+    s = f"{v:+.{nd}f}" if sign else f"{v:.{nd}f}"
+    return s
 
 
 def md_table(header, rows):
@@ -77,7 +81,46 @@ def load_latest(pattern, target: date):
     return json.loads(best.read_text(encoding="utf-8")), best_d
 
 
-# ---------------------------------------------------------------- 行情
+def pctile_text(v):
+    return f"P{v:.0f}" if v is not None else "—"
+
+
+# ---------------------------------------------------------------- 一、关键指标仪表盘
+
+def render_dashboard(stock: dict, market: dict, bank_fund: dict | None,
+                     enrich: dict) -> str:
+    ind = (bank_fund or {}).get("indicators") or {}
+    w52 = enrich.get("w52") or {}
+    cn10y = market.get("rates", {}).get("cn10y")
+    dy = stock.get("div_yield_ttm")
+    spread = round(dy - cn10y, 2) if (dy is not None and cn10y is not None) else None
+    rows = [
+        ["A股收盘（元）", dash(stock.get("a_close")) + f"（周 {dash(stock.get('a_wtd_pct'), sign=True)}%）"],
+        ["H股收盘（港元）", (dash(stock.get("h_close")) +
+                            f"（周 {dash(stock.get('h_wtd_pct'), sign=True)}%）")
+         if stock.get("h_close") is not None else "无 H 股"],
+        ["AH 溢价%", dash(stock.get("ah_premium_pct"), sign=True)],
+        ["PB", f"{dash(stock.get('pb'))}（近5年分位 {pctile_text(enrich.get('pb_pctile'))}）"],
+        ["PE-TTM（倍）", dash(stock.get("pe_ttm"))],
+        ["股息率 TTM%", f"{dash(dy)}（近5年分位 {pctile_text(enrich.get('dy_pctile'))}）"],
+        ["股息率−10Y 利差 pct", dash(spread, sign=True)],
+        ["52 周位置", (f"{w52['pos_pct']:.0f}%（区间 {dash(w52.get('w52_low'))}–"
+                       f"{dash(w52.get('w52_high'))}，距高点 {dash(w52.get('drawdown_pct'), sign=True)}%）")
+         if w52.get("pos_pct") is not None else "—"],
+        ["ROE 年化%（累计年化）", dash(enrich.get("roe_annual"))],
+        ["PB-ROE 偏离%", dash(enrich.get("pb_roe_dev"), nd=1, sign=True)],
+        ["净息差% / 净利差%", f"{dash(ind.get('nim_pct'))} / {dash(ind.get('nim_spread_pct'))}"],
+        ["不良率% / 逾期率%", f"{dash(ind.get('npl_ratio_pct'))} / {dash(ind.get('overdue_ratio_pct'))}"],
+        ["拨备覆盖率%", dash(ind.get("provision_coverage_pct"), nd=0)],
+        ["核心一级 / 资本充足率%", f"{dash(ind.get('cet1_pct'))} / {dash(ind.get('car_pct'))}"],
+        ["分红率%（上一完整财年）", dash(ind.get("payout_ratio_pct"), nd=1)],
+        ["存款 / 贷款 YoY%", f"{dash(ind.get('deposits_yoy_pct'), sign=True)} / "
+                             f"{dash(ind.get('loans_yoy_pct'), sign=True)}"],
+    ]
+    return md_table(["指标", "数值"], rows)
+
+
+# ---------------------------------------------------------------- 二、近期行情与市场表现
 
 def render_market_perf(stock: dict, market: dict) -> str:
     idx = {i["symbol"]: i for i in market.get("indexes", [])}
@@ -109,9 +152,9 @@ def render_market_perf(stock: dict, market: dict) -> str:
     return "\n".join(lines)
 
 
-# ---------------------------------------------------------------- 估值
+# ---------------------------------------------------------------- 三、估值分析
 
-def render_valuation(stock: dict, market: dict) -> str:
+def render_valuation(stock: dict, market: dict, enrich: dict) -> str:
     stocks = market.get("stocks", [])
     segment = stock.get("segment")
     peers = [s for s in stocks if s.get("segment") == segment]
@@ -132,6 +175,20 @@ def render_valuation(stock: dict, market: dict) -> str:
             row("股息率TTM（%）", "div_yield_ttm", pool_div, seg_div)]
     parts = [md_table(["指标", "本行", "全池中位数(12家)", f"同板块中位数({segment})"], rows)]
 
+    w52 = enrich.get("w52") or {}
+    bits = []
+    if enrich.get("pb_pctile") is not None:
+        bits.append(f"PB 近 5 年分位 P{enrich['pb_pctile']:.0f}")
+    if enrich.get("dy_pctile") is not None:
+        bits.append(f"股息率近 5 年分位 P{enrich['dy_pctile']:.0f}")
+    if w52.get("pos_pct") is not None:
+        bits.append(f"52 周位置 {w52['pos_pct']:.0f}%（距高点 {dash(w52.get('drawdown_pct'), sign=True)}%）")
+    if enrich.get("pb_roe_dev") is not None:
+        dev = enrich["pb_roe_dev"]
+        bits.append(f"PB-ROE 偏离 {dev:+.1f}%（{'相对低估' if dev < -20 else ('相对高估' if dev > 20 else '区间内')}）")
+    if bits:
+        parts.append("\n**历史位置**：" + "；".join(bits) + "。")
+
     cn10y = market.get("rates", {}).get("cn10y")
     if stock.get("div_yield_ttm") is not None and cn10y is not None:
         spread = round(stock["div_yield_ttm"] - cn10y, 2)
@@ -147,13 +204,14 @@ def render_valuation(stock: dict, market: dict) -> str:
     return "\n".join(parts)
 
 
-# ---------------------------------------------------------------- 基本面
+# ---------------------------------------------------------------- 四、基本面分析
 
-def render_fundamentals(bank_fund: dict | None, gaps: list) -> str:
+def render_fundamentals(bank_fund: dict | None) -> str:
     if not bank_fund:
         return "（fundamentals 快照中无该银行记录）"
     analysis = bank_fund.get("analysis", {})
     periods = analysis.get("periods", [])
+    ind = bank_fund.get("indicators") or {}
     parts = []
     latest = analysis.get("latest") or {}
     if latest:
@@ -162,42 +220,46 @@ def render_fundamentals(bank_fund: dict | None, gaps: list) -> str:
                      f"（YoY {dash(latest.get('revenue_yoy_pct'), sign=True)}%），净利 "
                      f"{dash(periods[0].get('profit_yi') if periods else None)} 亿"
                      f"（YoY {dash(latest.get('profit_yoy_pct'), sign=True)}%），"
-                     f"单季 ROE {dash(latest.get('roe_pct'))}%。")
+                     f"累计 ROE {dash(latest.get('roe_pct'))}%。")
     if periods:
+        # EPS/BVPS 按报告期并入趋势表（F10 history 的 period 为「2026中报」式命名）
+        per_q = {}
+        for h in ind.get("history", []):
+            pname = str(h.get("period") or "")
+            for q, suffix in Q_TO_F10.items():
+                if pname.endswith(suffix):
+                    per_q[f"{pname[:4]}{q}"] = h
         rows = []
         for i, p in enumerate(periods):
             label = f"**{p['period']}**（最新）" if i == 0 else p["period"]
+            h = per_q.get(p["period"]) or {}
             rows.append([label, dash(p.get("revenue_yi")), dash(p.get("revenue_yoy_pct"), sign=True),
                          dash(p.get("profit_yi")), dash(p.get("profit_yoy_pct"), sign=True),
-                         dash(p.get("roe_pct"))])
-        parts.append(md_table(["报告期", "营收(亿)", "营收YoY%", "净利(亿)", "净利YoY%", "ROE%(单季)"], rows))
-        note = analysis.get("trend_note") or ""
-        if note:
-            parts.append(f"\n> 趋势（自动判定）：{note}。")
+                         dash(p.get("roe_pct")), dash(h.get("eps")), dash(h.get("bps"))])
+        parts.append(md_table(["报告期", "营收(亿)", "营收YoY%", "净利(亿)", "净利YoY%",
+                               "ROE%(累计)", "EPS(元)", "BVPS(元)"], rows))
     else:
         parts.append("（无可用报告期）")
 
-    cur = bank_fund.get("curated", {})
-    cur_labels = [("nim_pct", "净息差%"), ("npl_ratio_pct", "不良率%"),
-                  ("provision_coverage_pct", "拨备覆盖率%"), ("cet1_pct", "核心一级资本充足率%"),
-                  ("payout_ratio_pct", "分红率%")]
-
-    def cv(key):
-        v = cur.get(key)
-        return dash(v) if v is not None else "待填"
-
-    parts.append("\n**专项指标（自动拉取：东财 F10/分红送配；手工台账值优先）**\n")
-    parts.append(md_table(["报告期(已披露)"] + [lb for _, lb in cur_labels],
-                          [[cur.get("report") or "待填"] + [cv(k) for k, _ in cur_labels]]))
-    auto_info = (bank_fund or {}).get("indicators_auto") or {}
-    if auto_info.get("as_of"):
-        parts.append(f"\n> 自动层缓存 fin_indicators_{auto_info['as_of']}"
-                     f"（报告期 {auto_info.get('period') or '—'}，"
-                     f"分红率财年 {auto_info.get('payout_fy') or '—'}）；"
-                     f"手工台账 `bank_fundamentals.json` 非空值优先覆盖。")
-    bank_gaps = [g for g in gaps if g.startswith(bank_fund.get("name", "\0"))]
-    if bank_gaps:
-        parts.append("\n本行台账待填：" + "；".join(bank_gaps) + "。")
+    ind_labels = [("nim_pct", "净息差%"), ("nim_spread_pct", "净利差%"),
+                  ("npl_ratio_pct", "不良率%"), ("overdue_ratio_pct", "逾期率%"),
+                  ("provision_coverage_pct", "拨备覆盖率%"), ("cet1_pct", "核心一级%"),
+                  ("car_pct", "资本充足率%"), ("payout_ratio_pct", "分红率%")]
+    parts.append("\n**专项指标（东财 F10/分红送配自动拉取）**\n")
+    parts.append(md_table(["指标期"] + [lb for _, lb in ind_labels],
+                          [[ind.get("period") or "—"]
+                           + [dash(ind.get(k)) for k, _ in ind_labels]]))
+    scale = []
+    if ind.get("deposits_yi") is not None:
+        scale.append(f"存款 {ind['deposits_yi']:,.0f} 亿（YoY {dash(ind.get('deposits_yoy_pct'), sign=True)}%）")
+    if ind.get("gross_loans_yi") is not None:
+        scale.append(f"贷款 {ind['gross_loans_yi']:,.0f} 亿（YoY {dash(ind.get('loans_yoy_pct'), sign=True)}%）")
+    if scale:
+        parts.append("\n**规模**：" + "；".join(scale) + "（YoY 为对上年同报告期自算）。")
+    meta = (bank_fund or {}).get("indicators_meta") or {}
+    if meta.get("as_of"):
+        parts.append(f"\n> 自动层缓存 fin_indicators_{meta['as_of']}"
+                     f"（指标期 {meta.get('period') or '—'}，分红率财年 {meta.get('payout_fy') or '—'}）。")
     return "\n".join(parts)
 
 
@@ -225,144 +287,10 @@ def chart_earnings(bank_fund: dict | None):
                        {"name": "净利YoY", "vals": [p.get("profit_yoy_pct") for p in rows]}]}
 
 
-# ---------------------------------------------------------------- 公告与舆情
-
-def render_news_notice(name: str, a_code: str, news: dict) -> str:
-    parts = []
-    notices = [n for n in news.get("notices", []) if n.get("code") == a_code]
-    parts.append(f"**公告（本周窗口 {len(notices)} 条）**\n")
-    if notices:
-        by_cat = {}
-        for n in notices:
-            by_cat.setdefault(n.get("category", "其他"), []).append(n)
-        for cat, items in by_cat.items():
-            parts.append(f"*{cat}*\n")
-            for n in items:
-                link = f"（[链接]({n['url']})）" if n.get("url") else ""
-                parts.append(f"- `{n.get('date', '')}` {n.get('title', '')}{link}")
-    else:
-        parts.append("（本周窗口内无该银行公告）")
-
-    flash = [f for f in news.get("flash", [])
-             if f.get("title") and name in (f.get("title", "") + f.get("summary", ""))]
-    parts.append(f"\n**快讯（标题/摘要命中「{name}」{len(flash)} 条）**\n")
-    if flash:
-        for f in flash:
-            title = f"[{f['title']}]({f['url']})" if f.get("url") else f["title"]
-            parts.append(f"- `{f.get('time', '')}` 【{f.get('source', '')}】{title}"
-                         f" — {f.get('summary', '')}")
-    else:
-        parts.append("（无命中。注意：快讯源仅覆盖最近 24–48 小时，不代表一周无相关舆情。）")
-    return "\n".join(parts)
-
-
-# ---------------------------------------------------------------- 观点初稿
-
-AUTO_MARK = "（初稿·自动）【待人工修订】"
-
-
-def render_short_view(stock: dict, market: dict, news: dict) -> str:
-    idx = {i["symbol"]: i for i in market.get("indexes", [])}
-    bank_idx, hs300 = idx.get("399986"), idx.get("000300")
-    bullets = []
-    if bank_idx and hs300 and stock.get("a_wtd_pct") is not None:
-        ex_300 = round(stock["a_wtd_pct"] - hs300["wtd_pct"], 2)
-        ex_bank = round(stock["a_wtd_pct"] - bank_idx["wtd_pct"], 2)
-        pos_300 = "跑赢" if ex_300 >= 0 else "跑输"
-        pos_bank = "强于" if ex_bank >= 0 else "弱于"
-        bullets.append(f"- **相对强弱**：本周 A 股{pos_300}沪深300 {ex_300:+.2f}pct、"
-                       f"{pos_bank}中证银行 {ex_bank:+.2f}pct"
-                       f"（A股周涨跌 {stock['a_wtd_pct']:+.2f}%）{AUTO_MARK}")
-    stocks = market.get("stocks", [])
-    peers = [s for s in stocks if s.get("segment") == stock.get("segment")]
-    v_pb, v_pe = stock.get("pb"), stock.get("pe_ttm")
-    pool_pb = med([s.get("pb") for s in stocks], nd=4)
-    seg_pb = med([s.get("pb") for s in peers], nd=4)
-    if v_pb is not None and pool_pb is not None:
-        bullets.append(f"- **估值位置**：PB {v_pb:.2f}（{cmp_label(v_pb, pool_pb)}全池中位 {pool_pb:.2f}、"
-                       f"{cmp_label(v_pb, seg_pb)}同板块中位 {seg_pb:.2f}），"
-                       f"PE-TTM {dash(v_pe)} 倍{AUTO_MARK}")
-    cn10y = market.get("rates", {}).get("cn10y")
-    if stock.get("div_yield_ttm") is not None and cn10y is not None:
-        spread = round(stock["div_yield_ttm"] - cn10y, 2)
-        bullets.append(f"- **股息性价比**：股息率 {stock['div_yield_ttm']:.2f}% − 10Y 国债 "
-                       f"{cn10y:.2f}% = 利差 {spread:+.2f}pct{AUTO_MARK}")
-    elif cn10y is not None:
-        bullets.append(f"- **股息性价比**：股息率数据缺失，暂无法计算与 10Y 国债（{cn10y:.2f}%）利差{AUTO_MARK}")
-    n_notices = len([n for n in news.get("notices", []) if n.get("code") == stock.get("a_code")])
-    bullets.append(f"- **事件面**：本周窗口内本行公告 {n_notices} 条，快讯命中见第六节{AUTO_MARK}")
-    return "\n".join(bullets) if bullets else f"（无可用信号）{AUTO_MARK}"
-
-
-def render_long_view(stock: dict, bank_fund: dict | None, fund: dict) -> str:
-    bullets = []
-    latest = (bank_fund or {}).get("analysis", {}).get("latest") or {}
-    period = latest.get("period") or "最新期"
-    rev_yoy, prof_yoy = latest.get("revenue_yoy_pct"), latest.get("profit_yoy_pct")
-    if rev_yoy is not None or prof_yoy is not None:
-        rev_word = "正增长" if (rev_yoy or 0) >= 0 else "负增长"
-        prof_word = "正增长" if (prof_yoy or 0) >= 0 else "负增长"
-        bullets.append(f"- **成长中枢**：{period} 营收 YoY {dash(rev_yoy, sign=True)}%（{rev_word}）、"
-                       f"净利 YoY {dash(prof_yoy, sign=True)}%（{prof_word}）{AUTO_MARK}")
-    note = (bank_fund or {}).get("analysis", {}).get("trend_note") or ""
-    if note:
-        bullets.append(f"- **营收趋势**：{note}（自动判定，基于近 6 个报告期同比）{AUTO_MARK}")
-    banks = fund.get("banks", [])
-    roes = [b.get("analysis", {}).get("latest", {}).get("roe_pct") for b in banks]
-    roes = [r for r in roes if r is not None]
-    roe = latest.get("roe_pct")
-    if roes and roe is not None:
-        pos = "上部" if roe >= med(roes, nd=2) else "下部"
-        bullets.append(f"- **盈利能力**：单季 ROE {roe:.2f}%，处于核心池 ROE 区间 "
-                       f"{min(roes):.2f}%–{max(roes):.2f}% 的{pos}{AUTO_MARK}")
-    curated = (bank_fund or {}).get("curated", {})
-    null_fields = [k for k, v in curated.items() if v is None]
-    if null_fields:
-        bullets.append(f"- **台账缺口**：净息差/不良率/拨备覆盖率/核心一级/分红率等待填项 "
-                       f"（{len(null_fields)} 项），补齐后方可评估息差与资产质量{AUTO_MARK}")
-    seg = stock.get("segment")
-    dual = "AH 双重上市" if stock.get("h_close") is not None else "仅 A 股上市"
-    bullets.append(f"- **板块定位**：{seg}，{dual}；长期逻辑需结合公司概况（第二节人工撰写）展开{AUTO_MARK}")
-    return "\n".join(bullets) if bullets else f"（无可用信号）{AUTO_MARK}"
-
-
-# ---------------------------------------------------------------- 跟踪清单
-
-def render_tracking(target: date, name: str, gaps: list) -> str:
-    parts = []
-    bank_gaps = [g for g in gaps if g.startswith(name)]
-    if bank_gaps:
-        parts.append("**台账待填（curated_gaps 中本行条目）**\n")
-        for g in bank_gaps:
-            parts.append(f"- [ ] {g}")
-    else:
-        parts.append("**台账待填**：无（本行 curated 字段已补齐）。")
-
-    window = [target + timedelta(days=i) for i in range(1, CALENDAR_DAYS + 1)]
-    rules = []
-    if any(d.day == 20 for d in window):
-        rules.append("- **LPR 报价**（每月 20 日，遇节假日顺延）：关注 1Y/5Y 以上品种是否调整，"
-                     "影响息差预期。")
-    if any(d.day >= 28 for d in window):
-        rules.append("- **月末窗口**：PMI（下月 1 日公布）与金融监管总局季度监管指标发布窗口，"
-                     "留意社融/信贷数据。")
-    if any(d.month == 10 for d in window):
-        rules.append("- **三季报披露期**：关注本行及同板块业绩披露节奏与业绩预告。")
-    if any(d.month == 8 for d in window):
-        rules.append("- **中报披露收尾**：核对中报净息差、不良率、拨备覆盖率并回填台账。")
-    if any(d.month == 4 for d in window):
-        rules.append("- **年报/一季报披露期**：年度分红方案窗口，核对分红率并回填台账。")
-    if any(d.month == 1 for d in window):
-        rules.append("- **年报预告窗口**：关注业绩快报/预告与年度分红预案。")
-    parts.append(f"\n**规则日历（未来 {CALENDAR_DAYS} 天）**\n")
-    parts.extend(rules) if rules else parts.append("（未来窗口内无规则命中事项）")
-    return "\n".join(parts)
-
-
 # ---------------------------------------------------------------- 主流程
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="生成单家银行个股研究报告 Markdown")
+    ap = argparse.ArgumentParser(description="生成单家银行个股研究报告 Markdown（指标+图表）")
     ap.add_argument("--code", required=True, help="A股代码，如 600036（可用代码见 watchlist.json）")
     ap.add_argument("--date", default=None, help="报告日期 YYYY-MM-DD，默认今天")
     ap.add_argument("--out", default=None, help="输出目录，默认 output/single")
@@ -387,16 +315,29 @@ def main() -> None:
         raise SystemExit(f"错误：market 快照（{d_mkt}）中无 {args.code}({watch_stock['name']}) 的行情记录")
     stock = {**watch_stock, **mkt_stock}  # 行情字段以 market 快照为准
 
-    news, d_news = load_latest("news_*.json", target)
     fund, d_fund = load_latest("fundamentals_*.json", target)
-    news = news or {"flash": [], "notices": [], "meta": {}}
-    fund = fund or {"banks": [], "meta": {"curated_gaps": []}}
-    data_as_of = max(d for d in (d_mkt, d_news, d_fund) if d).isoformat()
+    fund = fund or {"banks": [], "meta": {}}
+    data_as_of = max(d for d in (d_mkt, d_fund) if d).isoformat()
 
     bank_fund = next((b for b in fund.get("banks", []) if b.get("a_code") == args.code), None)
-    gaps = fund.get("meta", {}).get("curated_gaps", [])
-    name = stock["name"]
 
+    # 估值增强（分位/52周/PB-ROE；板块中位用全池 PB/ROE 比值）
+    fund_by_code = {b["a_code"]: b for b in fund.get("banks", [])}
+    ratios = []
+    for s in market.get("stocks", []):
+        roe = metrics.annualized_roe(fund_by_code.get(s["a_code"]))
+        if s.get("pb") and roe:
+            ratios.append(s["pb"] / roe)
+    enrich = {
+        "pb_pctile": metrics.pb_pctile(args.code, target, stock.get("pb")),
+        "dy_pctile": metrics.div_yield_pctile(args.code, target, stock.get("div_yield_ttm")),
+        "w52": metrics.week52(args.code, target),
+        "roe_annual": metrics.annualized_roe(bank_fund),
+        "pb_roe_dev": metrics.pb_roe_deviation(
+            stock.get("pb"), metrics.annualized_roe(bank_fund), ratios),
+    }
+
+    name = stock["name"]
     filled = TEMPLATE.read_text(encoding="utf-8")
     replacements = {
         "{{STOCK_NAME}}": name,
@@ -406,15 +347,12 @@ def main() -> None:
         "{{DATA_AS_OF}}": data_as_of,
         "{{GENERATED_AT}}": datetime.now().isoformat(timespec="seconds"),
         "{{METHOD_VERSION}}": methodology.current_version(),
-        "{{SHORT_VIEW}}": render_short_view(stock, market, news),
-        "{{LONG_VIEW}}": render_long_view(stock, bank_fund, fund),
+        "{{DASHBOARD}}": render_dashboard(stock, market, bank_fund, enrich),
         "{{MARKET_PERFORMANCE}}": render_market_perf(stock, market),
         "{{CHART_RELATIVE}}": fence(chart_relative(stock, target)),
-        "{{VALUATION}}": render_valuation(stock, market),
-        "{{FUNDAMENTALS}}": render_fundamentals(bank_fund, gaps),
+        "{{VALUATION}}": render_valuation(stock, market, enrich),
+        "{{FUNDAMENTALS}}": render_fundamentals(bank_fund),
         "{{CHART_EARNINGS}}": fence(chart_earnings(bank_fund)),
-        "{{NEWS_NOTICE}}": render_news_notice(name, args.code, news),
-        "{{TRACKING_LIST}}": render_tracking(target, name, gaps),
     }
     for token, value in replacements.items():
         if token not in filled:
@@ -427,17 +365,7 @@ def main() -> None:
     tmp = out_file.with_suffix(".md.tmp")
     tmp.write_text(filled, encoding="utf-8")
     tmp.replace(out_file)
-
-    bank_gaps = [g for g in gaps if g.startswith(name)]
     print(f"已生成 {out_file}")
-    print("人工待办清单：")
-    print("  [待修订] 一、短期观点（初稿已给）")
-    print("  [待修订] 一、长期观点（初稿已给）")
-    print("  [待撰写] 二、公司概况")
-    print("  [待撰写] 四、估值分析（历史分位与合理区间）")
-    print("  [待撰写] 五、基本面分析（定期报告点评）")
-    print("  [待撰写] 七、催化剂与风险提示")
-    print(f"  [台账]   本行待填 {len(bank_gaps)} 项（见八、跟踪清单）")
 
 
 if __name__ == "__main__":

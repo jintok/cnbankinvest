@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""银行板块周报生成器（正文 3 分钟决策摘要 + 附录明细 结构）。
+"""银行板块周报生成器（纯自动「指标 + 图表」仪表盘，方法论 v20261003 结构）。
 
-读取 data/ 下 ≤ --date 的最新 market_*.json / news_*.json / fundamentals_*.json，
+读取 data/ 下 ≤ --date 的最新 market_*.json / fundamentals_*.json，
 填充包内 templates/weekly_template.md，写出 output/weekly/bank_weekly_YYYY-MM-DD.md（tmp+replace 原子写）。
-纯标准库实现（不联网、不依赖 akshare）。
+纯标准库实现（不联网、不依赖 akshare）；估值分位/52 周/相关性等经 cnbankinvest.metrics
+读 data/valuation_hist/ 与 data/hist/ 缓存离线计算。
 
-结构约定：正文（一~九节）是决策摘要层，全部个股明细在文末附录（附1~附4）。
 每次运行同步维护 data/spread_history.json（核心池股息率中位数 − 10Y国债 利差序列），
 同日期重复运行会覆盖当日记录，保证幂等。
 
@@ -18,16 +18,13 @@ import statistics
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from cnbankinvest import methodology
+from cnbankinvest import methodology, metrics
 from cnbankinvest.charts import fence, relative_line_spec
 from cnbankinvest.paths import DATA_DIR, WEEKLY_DIR
 
 TEMPLATE = Path(__file__).resolve().parent / "templates" / "weekly_template.md"
 SPREAD_HISTORY = DATA_DIR / "spread_history.json"
 SPREAD_MIN_SAMPLES = 20  # 利差历史分位数最少样本数
-
-INDEX_CHART_SERIES = [("399986", "中证银行"), ("000300", "沪深300"),
-                      ("000922", "中证红利"), ("931039", "银行AH优选")]
 
 
 # ---------------------------------------------------------------- 工具
@@ -63,6 +60,11 @@ def load_latest(pattern, target: date):
     if best is None:
         return None, None
     return json.loads(best.read_text(encoding="utf-8")), best_d
+
+
+def med(values, nd=2):
+    vals = [v for v in values if v is not None]
+    return round(statistics.median(vals), nd) if vals else None
 
 
 # ---------------------------------------------------------------- A/H 因子
@@ -106,139 +108,44 @@ def ah_premium_stats(market: dict, target: date) -> dict:
     return {"n": len(cur), "mean": mean, "median": median, "wow": wow}
 
 
-# ---------------------------------------------------------------- 信号（复用层）
+# ---------------------------------------------------------------- 估值增强（分位/52周/PB-ROE）
 
-def build_signals(market: dict, ah_stats: dict) -> list:
-    """自动信号清单（纯数据计算，null 安全）。供一周速览/观点初稿复用。"""
-    signals = []
-    idx = {i["symbol"]: i for i in market["indexes"]}
-    bank, hs300 = idx.get("399986"), idx.get("000300")
-    if bank and hs300 and bank["wtd_pct"] is not None and hs300["wtd_pct"] is not None:
-        excess = round(bank["wtd_pct"] - hs300["wtd_pct"], 2)
-        signals.append(f"**板块超额**：中证银行本周 {dash(bank['wtd_pct'], sign=True)}%，"
-                       f"沪深300 {dash(hs300['wtd_pct'], sign=True)}%，"
-                       f"周超额 {excess:+.2f}pct。")
-    idx931 = idx.get("931039")
-    if idx931 and bank and idx931["wtd_pct"] is not None and bank["wtd_pct"] is not None:
-        diff = round(idx931["wtd_pct"] - bank["wtd_pct"], 2)
-        signals.append(f"**AH优选超额**：银行AH优选(931039) 本周 {dash(idx931['wtd_pct'], sign=True)}%，"
-                       f"较中证银行 {diff:+.2f}pct。")
-    sb = market["southbound"]
-    if sb.get("week_net_buy_hkd_yi") is not None:
-        direction = "净流入" if sb["week_net_buy_hkd_yi"] >= 0 else "净流出"
-        signals.append(f"**南向资金**：近 {len(sb.get('days', []))} 个交易日合计{direction} "
-                       f"{abs(sb['week_net_buy_hkd_yi']):.2f} 亿港元。")
-    r = market["rates"]
-    if r.get("cn10y") is not None:
-        if r.get("cn10y_prev_week") is not None:
-            bp = round((r["cn10y"] - r["cn10y_prev_week"]) * 100, 1)
-            signals.append(f"**无风险利率**：10Y 国债 {r['cn10y']:.2f}%，周变动 {bp:+.1f}bp"
-                           f"（Shibor 1W {dash(r.get('shibor_1w'))}%）。")
-        else:
-            signals.append(f"**无风险利率**：10Y 国债 {r['cn10y']:.2f}%"
-                           f"（Shibor 1W {dash(r.get('shibor_1w'))}%）。")
-    ah = [(s["name"], s["ah_premium_pct"]) for s in market["stocks"]
-          if s.get("ah_premium_pct") is not None]
-    if ah:
-        hi = max(ah, key=lambda x: x[1])
-        lo = min(ah, key=lambda x: x[1])
-        signals.append(f"**AH 溢价极值**：最高 {hi[0]} {hi[1]:+.2f}%，"
-                       f"最低 {lo[0]} {lo[1]:+.2f}%（负值=H股折价）。")
-    if ah_stats.get("mean") is not None:
-        wow = ah_stats.get("wow")
-        wow_text = f"，环比 {wow:+.2f}pct" if wow is not None else "（环比待补：缺 fx 或 hist 缓存）"
-        signals.append(f"**AH溢价均值**：{ah_stats['n']} 家 A+H 银行溢价率均值 {ah_stats['mean']:.2f}%、"
-                       f"中位数 {ah_stats['median']:.2f}%（负值=H股折价）{wow_text}。")
-    cn10y = r.get("cn10y")
-    if cn10y is not None:
-        spreads = [(s["name"], round(s["div_yield_ttm"] - cn10y, 2))
-                   for s in market["stocks"] if s.get("div_yield_ttm") is not None]
-        if spreads:
-            shi = max(spreads, key=lambda x: x[1])
-            slo = min(spreads, key=lambda x: x[1])
-            signals.append(f"**股息率−10Y利差**：最高 {shi[0]} {shi[1]:+.2f}pct，"
-                           f"最低 {slo[0]} {slo[1]:+.2f}pct（负值=股息率低于10Y国债）。")
-    seg_pb = {}
+def enrich_stocks(market: dict, fund: dict, target: date) -> dict:
+    """逐股计算估值增强指标：PB 分位、股息率分位、52 周位置、ROE 年化、PB-ROE 偏离。
+    返回 {a_code: {...}}；数据缺失时各字段为 None。"""
+    fund_by_code = {b["a_code"]: b for b in fund.get("banks", [])}
+    roe_map = {c: metrics.annualized_roe(b) for c, b in fund_by_code.items()}
+    ratios = []
     for s in market["stocks"]:
-        if s.get("pb") is not None:
-            seg_pb.setdefault(s["segment"], []).append((s["name"], s["pb"]))
-    if seg_pb:
-        bits = [f"{seg} {min(v, key=lambda x: x[1])[1]:.2f}–{max(v, key=lambda x: x[1])[1]:.2f}"
-                f"（{min(v, key=lambda x: x[1])[0]} ~ {max(v, key=lambda x: x[1])[0]}）"
-                for seg, v in seg_pb.items()]
-        signals.append("**板块 PB 区间**：" + "；".join(bits) + "。")
-    return signals
-
-
-def pick_signal(signals: list, prefix: str) -> str:
-    """按加粗前缀从信号清单取一条（如 '**板块超额**'），无则返回空串。"""
-    for s in signals:
-        if s.startswith(prefix):
-            return s
-    return ""
-
-
-# ---------------------------------------------------------------- 基本面统计（复用层）
-
-def fund_stats(fund: dict) -> dict:
-    """基本面汇总统计：中位数/ROE 区间/趋势计数/台账完整度。"""
-    banks = fund.get("banks", [])
-    out = {"n": len(banks), "period": None, "period_n": 0,
-           "rev_med": None, "prof_med": None, "roe_min": None, "roe_max": None,
-           "trend_up": 0, "trend_down": 0, "trend_flat": 0,
-           "curated_report_filled": 0, "reg_filled": 0, "reg_total": 6}
-    rev, prof, roe, periods = [], [], [], {}
-    for b in banks:
-        lat = b.get("analysis", {}).get("latest", {})
-        if lat.get("revenue_yoy_pct") is not None:
-            rev.append(lat["revenue_yoy_pct"])
-        if lat.get("profit_yoy_pct") is not None:
-            prof.append(lat["profit_yoy_pct"])
-        if lat.get("roe_pct") is not None:
-            roe.append(lat["roe_pct"])
-        if lat.get("period"):
-            periods[lat["period"]] = periods.get(lat["period"], 0) + 1
-        if "上行" in b.get("analysis", {}).get("trend_note", ""):
-            out["trend_up"] += 1
-        elif "下行" in b.get("analysis", {}).get("trend_note", ""):
-            out["trend_down"] += 1
-        else:
-            out["trend_flat"] += 1
-        if b.get("curated", {}).get("report"):
-            out["curated_report_filled"] += 1
-    if periods:
-        out["period"] = max(periods, key=periods.get)   # 众数
-        out["period_n"] = periods[out["period"]]
-    if rev:
-        out["rev_med"] = round(statistics.median(rev), 2)
-    if prof:
-        out["prof_med"] = round(statistics.median(prof), 2)
-    if roe:
-        out["roe_min"], out["roe_max"] = min(roe), max(roe)
-    ind = fund.get("industry_regulatory", {}) or {}
-    latest = ind.get("latest")
-    if isinstance(latest, dict):
-        out["reg_filled"] = sum(1 for v in latest.values() if v is not None)
-    else:
-        # 台账未合并时读手工文件口径：items[0] 六字段非空计数
-        items = ind.get("items") or []
-        if items and isinstance(items[0], dict):
-            keys = ("nim_pct", "npl_ratio_pct", "provision_coverage_pct",
-                    "car_pct", "profit_yoy_pct", "tsf_note")
-            out["reg_filled"] = sum(1 for k in keys if items[0].get(k) is not None)
+        roe = roe_map.get(s["a_code"])
+        if s.get("pb") and roe:
+            ratios.append(s["pb"] / roe)
+    out = {}
+    for s in market["stocks"]:
+        code = s["a_code"]
+        roe = roe_map.get(code)
+        out[code] = {
+            "pb_pctile": metrics.pb_pctile(code, target, s.get("pb")),
+            "dy_pctile": metrics.div_yield_pctile(code, target, s.get("div_yield_ttm")),
+            "w52": metrics.week52(code, target),
+            "roe_annual": roe,
+            "pb_roe_dev": metrics.pb_roe_deviation(s.get("pb"), roe, ratios),
+        }
     return out
 
 
-# ---------------------------------------------------------------- 二、一周速览
+# ---------------------------------------------------------------- 一、一周速览
 
 def render_index_table(market: dict) -> str:
     rows = [[i["name"], dash(i["close"]),
-             dash(i["wtd_pct"], sign=True), dash(i["ytd_pct"], sign=True)]
+             dash(i["wtd_pct"], sign=True), dash(i["ytd_pct"], sign=True),
+             dash(i.get("index_div_yield"))]
             for i in market["indexes"]]
-    return md_table(["名称", "收盘", "周涨跌%", "年初至今%"], rows)
+    return md_table(["名称", "收盘", "周涨跌%", "年初至今%", "股息率%"], rows)
 
 
-def render_dashboard(market: dict, ah_stats: dict, spread, spread_note: str) -> str:
+def render_dashboard(market: dict, ah_stats: dict, spread, spread_note: str,
+                     enrich: dict) -> str:
     parts = [render_index_table(market), ""]
     r = market["rates"]
     sb = market["southbound"]
@@ -253,6 +160,12 @@ def render_dashboard(market: dict, ah_stats: dict, spread, spread_note: str) -> 
         bits.append(s)
     if r.get("shibor_1w") is not None:
         bits.append(f"SHIBOR 1W {r['shibor_1w']:.2f}%")
+    if r.get("lpr_1y") is not None:
+        chg = f"（1Y 变动 {r['lpr_1y_change_bp']:+.0f}bp）" \
+            if r.get("lpr_1y_change_bp") else ""
+        bits.append(f"LPR 1Y/5Y {r['lpr_1y']:.2f}%/{dash(r.get('lpr_5y'))}%{chg}")
+    if r.get("credit_spread_3y") is not None:
+        bits.append(f"商业银行债 AAA 3Y 信用利差 {r['credit_spread_3y'] * 100:+.1f}bp")
     if ah_stats.get("mean") is not None:
         s = f"AH 溢价均值 {ah_stats['mean']:.2f}%"
         if ah_stats.get("wow") is not None:
@@ -261,11 +174,26 @@ def render_dashboard(market: dict, ah_stats: dict, spread, spread_note: str) -> 
     if spread is not None:
         bits.append(f"核心池股息率中位数−10Y 利差 {spread:+.2f}pct（{spread_note}）")
     parts.append("**速览**：" + "；".join(bits) + "。" if bits else "（本周无可用速览数据）")
-    parts.append("\n> AH 溢价负值 = H 股折价；利差 = 12 家股息率中位数 − 10Y 国债，明细见附1、第五节。")
+
+    pbs = [s["pb"] for s in market["stocks"] if s.get("pb") is not None]
+    pb_pcts = [e["pb_pctile"] for e in enrich.values() if e["pb_pctile"] is not None]
+    divs = [s["div_yield_ttm"] for s in market["stocks"] if s.get("div_yield_ttm") is not None]
+    level = []
+    if pbs:
+        s = f"板块 PB 中位数 {med(pbs):.2f}"
+        if pb_pcts:
+            s += f"（近 5 年分位中位 P{med(pb_pcts, 0):.0f}）"
+        level.append(s)
+    if divs:
+        level.append(f"股息率中位数 {med(divs):.2f}%")
+    if level:
+        parts.append("\n**估值水位**：" + "；".join(level) + "（明细见第四节）。")
+    parts.append("\n> AH 溢价负值 = H 股折价；利差 = 12 家股息率中位数 − 10Y 国债；"
+                 "指数股息率为中证官网股息率2 口径（仅当前值）。明细见附1、第四节。")
     return "\n".join(parts)
 
 
-# ---------------------------------------------------------------- 三、本周变化
+# ---------------------------------------------------------------- 二、本周变化
 
 def render_wow(market: dict, ah_stats: dict) -> str:
     parts = []
@@ -295,42 +223,67 @@ def render_wow(market: dict, ah_stats: dict) -> str:
     return "\n".join(parts) or "（本周无可用变化数据）"
 
 
-# ---------------------------------------------------------------- 四、观点初稿
+# ---------------------------------------------------------------- 三、跨指数比较
 
-def render_view_drafts(market: dict, news: dict, fund: dict, signals: list) -> str:
-    parts = ["**短期观点（1–4 周）**（初稿·自动）\n"]
-    shorts = [pick_signal(signals, "**板块超额**"),
-              pick_signal(signals, "**南向资金**"),
-              pick_signal(signals, "**无风险利率**")]
-    cat_names = {"业绩快报": "业绩", "分红派息": "分红", "增减持": "增减持",
-                 "再融资": "再融资", "监管处罚": "监管", "人事变动": "人事"}
-    counts = {}
-    for n in news.get("notices", []):
-        k = cat_names.get(n["category"], n["category"])
-        counts[k] = counts.get(k, 0) + 1
-    if counts:
-        desc = "、".join(f"{k} {v} 条" for k, v in counts.items())
-        shorts.append(f"**事件面**：本周 watchlist 公告 {len(news['notices'])} 条（{desc}）；"
-                      f"银行相关快讯 {len(news.get('flash', []))} 条（头条见第六节，明细见附3）。")
-    parts += [f"- {s}" for s in shorts if s] or ["- （本周无可用信号）"]
+def render_corr_matrix(market: dict, target: date) -> str:
+    """相关性矩阵：跟踪指数两两近 1 年日收益 Pearson 相关。"""
+    symbols = [(i["symbol"], i["name"]) for i in market["indexes"]]
+    got = metrics.index_corr_matrix(symbols, target)
+    if not got:
+        return "（hist 缓存不足，相关性矩阵暂缺）"
+    names, matrix = got
+    rows = []
+    for nm, row in zip(names, matrix):
+        rows.append([nm] + [dash(v) for v in row])
+    return ("**相关性矩阵**（近 1 年日收益 Pearson 相关，hist 日线缓存）\n\n"
+            + md_table(["指数"] + names, rows))
 
-    parts.append("\n**长期观点（6–24 个月）**（初稿·自动）\n")
-    st = fund_stats(fund)
-    longs = []
-    if st["rev_med"] is not None:
-        longs.append(f"**成长中枢**：核心池 {st['n']} 家最新期营收 YoY 中位数 {st['rev_med']:.2f}%、"
-                     f"净利 YoY 中位数 {st['prof_med']:.2f}%。")
-    if st["roe_min"] is not None:
-        longs.append(f"**盈利能力**：单季 ROE 区间 {st['roe_min']:.2f}%–{st['roe_max']:.2f}%。")
-    if st["trend_up"] or st["trend_down"]:
-        longs.append(f"**营收趋势**：连续上行 {st['trend_up']} 家、连续下行 {st['trend_down']} 家、"
-                     f"波动 {st['trend_flat']} 家（口径见附2 trend_note）。")
-    if st["curated_report_filled"] < st["n"]:
-        longs.append("**台账待填报**：净息差/不良率/拨备覆盖率/核心一级资本充足率/分红率等 curated 字段"
-                     "当前为空，需人工从金融监管总局季度通报与银行定期报告填报"
-                     "（data/bank_fundamentals.json），填报后本节与第七节自动补全。")
-    parts += [f"- {s}" for s in longs if s] or ["- （基本面台账为空）"]
-    return "\n".join(parts)
+
+def render_dividend_matrix(market: dict, enrich: dict) -> str:
+    """股息率对比矩阵：12 家银行（自算 TTM + 分位 + 利差）vs 指数股息率2（当前值 + 利差）。"""
+    cn10y = market["rates"].get("cn10y")
+    rows = []
+    for s in market["stocks"]:
+        dy = s.get("div_yield_ttm")
+        spread = round(dy - cn10y, 2) if (dy is not None and cn10y is not None) else None
+        pctile = enrich.get(s["a_code"], {}).get("dy_pctile")
+        rows.append([s["name"], "银行", dash(dy),
+                     f"P{pctile:.0f}" if pctile is not None else "—",
+                     dash(spread, sign=True)])
+    for i in market["indexes"]:
+        dy = i.get("index_div_yield")
+        spread = round(dy - cn10y, 2) if (dy is not None and cn10y is not None) else None
+        rows.append([i["name"], "指数", dash(dy), "—", dash(spread, sign=True)])
+    return ("**股息率对比矩阵**（银行=自算 TTM 口径含近 5 年分位；"
+            "指数=中证官网股息率2，仅当前值无分位；利差=股息率 − 10Y 国债）\n\n"
+            + md_table(["名称", "类型", "股息率%", "股息率分位", "对10Y利差pct"], rows))
+
+
+def render_cross_index(market: dict, enrich: dict, target: date) -> str:
+    return render_corr_matrix(market, target) + "\n\n" + render_dividend_matrix(market, enrich)
+
+
+# ---------------------------------------------------------------- 四、估值水位
+
+def render_valuation_level(market: dict, enrich: dict) -> str:
+    rows = []
+    for s in market["stocks"]:
+        e = enrich.get(s["a_code"], {})
+        w52 = e.get("w52") or {}
+        rows.append([s["name"], s["segment"],
+                     dash(s.get("pb")),
+                     f"P{e['pb_pctile']:.0f}" if e.get("pb_pctile") is not None else "—",
+                     dash(s.get("div_yield_ttm")),
+                     f"P{e['dy_pctile']:.0f}" if e.get("dy_pctile") is not None else "—",
+                     f"{w52['pos_pct']:.0f}%" if w52.get("pos_pct") is not None else "—",
+                     dash(w52.get("drawdown_pct"), sign=True),
+                     dash(e.get("roe_annual")),
+                     dash(e.get("pb_roe_dev"), nd=1, sign=True)])
+    table = md_table(["名称", "板块", "PB", "PB分位", "股息率%", "股息率分位",
+                      "52周位置", "距高点回撤%", "ROE年化%", "PB-ROE偏离%"], rows)
+    note = ("\n\n> 分位为近 5 年日频口径（估值缓存 valuation_hist）；PB-ROE 偏离 = "
+            "个股 PB/ROE ÷ 板块中位(PB/ROE) − 1，负值=相对低估；ROE 年化 = 最新期累计 ROE × 4/季度序数（同花顺累计口径）。")
+    return table + note
 
 
 # ---------------------------------------------------------------- 五、A/H 因子
@@ -363,75 +316,81 @@ def render_ah_factor(market: dict, ah_stats: dict) -> str:
     return "\n".join(parts)
 
 
-# ---------------------------------------------------------------- 六、事件与政策
-
-def render_events_policy(market: dict, news: dict, fund: dict) -> str:
-    parts = ["**头条**\n"]
-    flash = news.get("flash", [])[:5]
-    if flash:
-        for f in flash:
-            t = f.get("time", "")
-            mmdd = t[5:16] if len(t) >= 16 else t          # MM-DD HH:MM
-            title = f"[{f['title']}]({f['url']})" if f.get("url") else f["title"]
-            parts.append(f"- `{mmdd}`【{f['source']}】{title}")
-    else:
-        parts.append("- （本周窗口内无命中的银行相关快讯）")
-    notices = news.get("notices", [])[:10]
-    if notices:
-        for n in notices:
-            title = f"[{n['title']}]({n['url']})" if n.get("url") else n["title"]
-            parts.append(f"- `{n['date'][5:]}` [{n['category']}] {n['name']}：{title}")
-    cm = fund.get("credit_macro", [])
-    if cm:
-        c = cm[0]
-        tsf = f"社融增量 {c['tsf_yi']:,.0f} 亿元" if c.get("tsf_yi") is not None else "社融增量本月未更新"
-        loan = f"新增贷款 {c['new_loans_yi']:,.0f} 亿元" if c.get("new_loans_yi") is not None else "新增贷款未更新"
-        parts.append(f"\n**信贷脉冲**：{c['period']}：{tsf}，{loan}（近 6 个月明细见附3）。")
-    return "\n".join(parts)
-
-
-# ---------------------------------------------------------------- 七、基本面摘要
+# ---------------------------------------------------------------- 六、基本面摘要
 
 def render_fund_summary(fund: dict) -> str:
-    st = fund_stats(fund)
+    banks = fund.get("banks", [])
     lines = []
-    if st["period"]:
-        lines.append(f"- **最新报告期**：{st['period']}（{st['period_n']}/{st['n']} 家已披露至该期）。")
-    if st["rev_med"] is not None:
-        lines.append(f"- **营收 YoY 中位数 {st['rev_med']:.2f}%**，"
-                     f"净利 YoY 中位数 {st['prof_med']:.2f}%（{st['n']} 家，同花顺按报告期口径）。")
-    if st["roe_min"] is not None:
-        lines.append(f"- **ROE（单季）区间**：{st['roe_min']:.2f}%–{st['roe_max']:.2f}%。")
-    lines.append(f"- **营收趋势**：连续上行 {st['trend_up']} 家、连续下行 {st['trend_down']} 家、"
-                 f"波动 {st['trend_flat']} 家。")
-    lines.append(f"- **手工台账完整度**：个股台账已填 report 的 "
-                 f"{st['curated_report_filled']}/{st['n']} 家；"
-                 f"行业监管指标已填 {st['reg_filled']}/{st['reg_total']} 项"
-                 f"（明细与本周待办见附2/附4）。")
-    return "\n".join(lines)
+    rev, prof, roe, periods = [], [], [], {}
+    nim, npl, cov, cet1, payout = [], [], [], [], []
+    dep_yoy, loan_yoy, overdue = [], [], []
+    for b in banks:
+        lat = b.get("analysis", {}).get("latest") or {}
+        if lat.get("revenue_yoy_pct") is not None:
+            rev.append(lat["revenue_yoy_pct"])
+        if lat.get("profit_yoy_pct") is not None:
+            prof.append(lat["profit_yoy_pct"])
+        if lat.get("roe_pct") is not None:
+            roe.append(lat["roe_pct"])
+        if lat.get("period"):
+            periods[lat["period"]] = periods.get(lat["period"], 0) + 1
+        ind = b.get("indicators") or {}
+        for key, acc in (("nim_pct", nim), ("npl_ratio_pct", npl),
+                         ("provision_coverage_pct", cov), ("cet1_pct", cet1),
+                         ("payout_ratio_pct", payout), ("deposits_yoy_pct", dep_yoy),
+                         ("loans_yoy_pct", loan_yoy), ("overdue_ratio_pct", overdue)):
+            if ind.get(key) is not None:
+                acc.append(ind[key])
+    if periods:
+        period = max(periods, key=periods.get)
+        lines.append(f"- **最新报告期**：{period}（{periods[period]}/{len(banks)} 家已披露至该期）。")
+    if rev:
+        lines.append(f"- **营收 YoY 中位数 {med(rev):.2f}%**，净利 YoY 中位数 {med(prof):.2f}%"
+                     f"（{len(banks)} 家，同花顺按报告期口径）。")
+    if roe:
+        lines.append(f"- **ROE（累计）区间**：{min(roe):.2f}%–{max(roe):.2f}%。")
+    if nim and npl:
+        lines.append(f"- **净息差中位数 {med(nim):.2f}%**；不良率区间 {min(npl):.2f}%–{max(npl):.2f}%；"
+                     f"拨备覆盖率中位数 {med(cov):.0f}%；核心一级中位数 {med(cet1):.2f}%；"
+                     f"分红率中位数 {med(payout):.1f}%（东财 F10 自动层）。")
+    if dep_yoy or loan_yoy:
+        lines.append(f"- **规模增速**：存款 YoY 中位数 {dash(med(dep_yoy), sign=True)}%、"
+                     f"贷款 YoY 中位数 {dash(med(loan_yoy), sign=True)}%。")
+    if overdue:
+        lines.append(f"- **逾期率区间**：{min(overdue):.2f}%–{max(overdue):.2f}%"
+                     f"（中位数 {med(overdue):.2f}%）。")
+    return "\n".join(lines) or "（无可用基本面数据）"
 
 
-# ---------------------------------------------------------------- 八、下周关注
+# ---------------------------------------------------------------- 七、宏观与利率
 
-CN_WEEKDAY = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
-
-
-def render_weekly_focus(target: date) -> str:
-    monday = target + timedelta(days=(7 - target.weekday()))  # 下周一
-    days = [monday + timedelta(days=i) for i in range(7)]
-    bullets = [f"下周区间：{days[0].isoformat()}（{CN_WEEKDAY[days[0].weekday()]}）~ "
-               f"{days[-1].isoformat()}（{CN_WEEKDAY[days[-1].weekday()]}）"]
-    if any(d.day == 20 for d in days):
-        bullets.append("- **LPR 报价**（每月 20 日）：关注 1Y/5Y 以上品种是否调整。")
-    if any(d.day >= 28 for d in days):
-        bullets.append("- **月末窗口**：PMI（下月 1 日）与金融监管总局季度指标发布窗口，留意社融/信贷数据。")
-    if any(d.month == 10 for d in days):
-        bullets.append("- **三季报披露期**开启：关注核心池银行业绩预告与率先披露个股。")
-    if any(d.month == 10 and d.day <= 8 for d in days):
-        bullets.append("- **国庆长假**：A股休市安排与港股通资金流向（历史规律：节前南向资金波动放大）。")
-    if any(d.month == 2 and 15 <= d.day <= 23 for d in days):
-        bullets.append("- **春节假期**：A股休市，关注节前资金面与长假的政策窗口。")
-    return "\n".join(bullets)
+def render_macro(market: dict, fund: dict) -> str:
+    r = market["rates"]
+    lines = []
+    if r.get("cn10y") is not None:
+        s = f"- **10Y 国债**：{r['cn10y']:.2f}%"
+        if r.get("cn10y_prev_week") is not None:
+            s += f"（周变动 {(r['cn10y'] - r['cn10y_prev_week']) * 100:+.1f}bp）"
+        if r.get("cn3y") is not None:
+            s += f"；3Y 国债 {r['cn3y']:.2f}%"
+        lines.append(s + "。")
+    if r.get("shibor_1w") is not None:
+        lines.append(f"- **Shibor 1W**：{r['shibor_1w']:.2f}%。")
+    if r.get("lpr_1y") is not None:
+        chg1 = f"{r['lpr_1y_change_bp']:+.0f}bp" if r.get("lpr_1y_change_bp") is not None else "—"
+        chg5 = f"{r['lpr_5y_change_bp']:+.0f}bp" if r.get("lpr_5y_change_bp") is not None else "—"
+        lines.append(f"- **LPR**（{r.get('lpr_date') or '—'}）：1Y {r['lpr_1y']:.2f}%（变动 {chg1}）、"
+                     f"5Y {dash(r.get('lpr_5y'))}%（变动 {chg5}）。")
+    if r.get("credit_spread_3y") is not None:
+        lines.append(f"- **信用利差**：商业银行普通债 AAA 3Y {dash(r.get('bank3y'))}% − "
+                     f"国债 3Y {dash(r.get('cn3y'))}% = {r['credit_spread_3y'] * 100:+.1f}bp。")
+    cm = fund.get("credit_macro") or []
+    if cm:
+        rows = [[c["period"], dash(c.get("tsf_yi"), nd=0), dash(c.get("new_loans_yi"), nd=0)]
+                for c in cm]
+        lines.append("\n**社融与信贷近 6 个月（亿元）**\n\n"
+                     + md_table(["月份", "社融增量", "新增贷款"], rows))
+    return "\n".join(lines) or "（无可用宏观数据）"
 
 
 # ---------------------------------------------------------------- 利差历史
@@ -471,8 +430,7 @@ def update_spread_history(target: date, market: dict):
 
 def chart_index_relative(market: dict, target: date):
     """指数归一化走势 spec：读 data/hist/i*.json，近 120 交易日起点=100。"""
-    syms = {i["symbol"] for i in market["indexes"]}
-    entries = [(f"i{sym}", nm) for sym, nm in INDEX_CHART_SERIES if sym in syms]
+    entries = [(f"i{i['symbol']}", i["name"]) for i in market["indexes"]]
     return relative_line_spec("指数相对走势（近120交易日，起点=100）", entries,
                               target.isoformat())
 
@@ -495,107 +453,79 @@ def chart_ah_premium(market: dict):
     return {"type": "bar", "title": "A/H 溢价率（%，负值=H股折价）", "items": items}
 
 
+def chart_pb_pctile(market: dict, enrich: dict):
+    items = [{"name": s["name"], "value": enrich[s["a_code"]]["pb_pctile"]}
+             for s in market["stocks"]
+             if enrich.get(s["a_code"], {}).get("pb_pctile") is not None]
+    if not items:
+        return None
+    items.sort(key=lambda it: it["value"], reverse=True)
+    return {"type": "bar", "title": "PB 近 5 年分位（%）", "items": items}
+
+
 # ---------------------------------------------------------------- 附录
 
-def render_appendix_market(market: dict) -> str:
+def render_appendix_market(market: dict, enrich: dict) -> str:
     cn10y = market["rates"].get("cn10y")
     rows = []
     for s in market["stocks"]:
+        e = enrich.get(s["a_code"], {})
+        w52 = e.get("w52") or {}
         spread = round(s["div_yield_ttm"] - cn10y, 2) \
             if s.get("div_yield_ttm") is not None and cn10y is not None else None
         rows.append([s["name"], s["segment"], dash(s["a_close"]),
                      dash(s["a_wtd_pct"], sign=True), dash(s["h_close"]),
                      dash(s["h_wtd_pct"], sign=True), dash(s["ah_premium_pct"], sign=True),
-                     dash(s["pb"]), dash(s["pe_ttm"]),
-                     dash(s["div_yield_ttm"]), dash(spread, sign=True)])
+                     dash(s["pb"]),
+                     f"P{e['pb_pctile']:.0f}" if e.get("pb_pctile") is not None else "—",
+                     dash(s["pe_ttm"]),
+                     dash(s["div_yield_ttm"]),
+                     f"P{e['dy_pctile']:.0f}" if e.get("dy_pctile") is not None else "—",
+                     f"{w52['pos_pct']:.0f}%" if w52.get("pos_pct") is not None else "—",
+                     dash(spread, sign=True)])
     return md_table(["名称", "板块", "A收盘", "周%", "H收盘", "周%",
-                     "AH溢价%", "PB", "PE-TTM", "股息率TTM%", "利差pct"], rows)
+                     "AH溢价%", "PB", "PB分位", "PE-TTM", "股息率TTM%", "股息率分位",
+                     "52周位置", "利差pct"], rows)
 
 
 def render_appendix_ledger(fund: dict) -> str:
-    rows = []
-    for b in fund.get("banks", []):
-        lat = b.get("analysis", {}).get("latest", {})
-        cur = b.get("curated", {})
-
-        def cv(key, nd=2):
-            v = cur.get(key)
-            return dash(v, nd) if v is not None else "待填"
-        rows.append([b["name"], lat.get("period") or "—",
-                     dash(lat.get("revenue_yoy_pct"), sign=True),
-                     dash(lat.get("profit_yoy_pct"), sign=True),
-                     dash(lat.get("roe_pct")),
-                     cv("nim_pct"), cv("npl_ratio_pct"), cv("provision_coverage_pct", nd=0),
-                     cv("cet1_pct"), cv("payout_ratio_pct")])
-    table = md_table(["名称", "最新期", "营收YoY%", "净利YoY%", "ROE%(单季)",
-                      "净息差%", "不良率%", "拨备覆盖率%", "核心一级%", "分红率%"], rows)
+    banks = fund.get("banks", [])
+    growth_rows, ind_rows = [], []
+    for b in banks:
+        lat = b.get("analysis", {}).get("latest") or {}
+        ind = b.get("indicators") or {}
+        growth_rows.append([b["name"], lat.get("period") or "—",
+                            dash(lat.get("revenue_yoy_pct"), sign=True),
+                            dash(lat.get("profit_yoy_pct"), sign=True),
+                            dash(lat.get("roe_pct")),
+                            dash(ind.get("eps")), dash(ind.get("bps")),
+                            dash(ind.get("deposits_yi"), nd=0),
+                            dash(ind.get("deposits_yoy_pct"), sign=True),
+                            dash(ind.get("gross_loans_yi"), nd=0),
+                            dash(ind.get("loans_yoy_pct"), sign=True)])
+        ind_rows.append([b["name"], ind.get("period") or "—",
+                         dash(ind.get("nim_pct")), dash(ind.get("nim_spread_pct")),
+                         dash(ind.get("npl_ratio_pct")), dash(ind.get("overdue_ratio_pct")),
+                         dash(ind.get("provision_coverage_pct"), nd=0),
+                         dash(ind.get("cet1_pct")), dash(ind.get("car_pct")),
+                         dash(ind.get("payout_ratio_pct"), nd=1)])
+    t1 = "**成长与规模**\n\n" + md_table(
+        ["名称", "最新期", "营收YoY%", "净利YoY%", "ROE%(累计)", "EPS(元)", "BVPS(元)",
+         "存款(亿)", "存款YoY%", "贷款(亿)", "贷款YoY%"], growth_rows)
+    t2 = "\n\n**专项指标（东财 F10 自动层）**\n\n" + md_table(
+        ["名称", "指标期", "净息差%", "净利差%", "不良率%", "逾期率%",
+         "拨备覆盖率%", "核心一级%", "资本充足率%", "分红率%"], ind_rows)
     as_of = (fund.get("meta") or {}).get("fin_indicators_as_of")
-    note = (f"\n\n> 专项指标来源：东财 F10 主要指标/分红送配自动拉取"
-            f"（fin_indicators_{as_of}），手工台账 `bank_fundamentals.json` 非空值优先；"
-            f"分红率为上一完整财年口径。" if as_of else
-            "\n\n> 专项指标来源：仅手工台账（fin_indicators 缓存缺失）。")
-    return table + note
-
-
-def render_appendix_news(news: dict, fund: dict) -> str:
-    parts = []
-    flash = news.get("flash", [])
-    parts.append(f"**快讯明细（{len(flash)} 条，含摘要）**\n")
-    if flash:
-        for f in flash:
-            title = f"[{f['title']}]({f['url']})" if f.get("url") else f["title"]
-            parts.append(f"- `{f.get('time', '')}` 【{f['source']}】{title} — {f.get('summary', '')}")
-    else:
-        parts.append("（无）")
-    notices = news.get("notices", [])
-    parts.append(f"\n**公告明细（{len(notices)} 条，按类别）**\n")
-    if notices:
-        by_cat = {}
-        for n in notices:
-            by_cat.setdefault(n["category"], []).append(n)
-        for cat, items in by_cat.items():
-            parts.append(f"\n*{cat}*\n")
-            for n in items:
-                parts.append(f"- `{n['date']}` {n['name']}：{n['title']}"
-                             + (f"（[链接]({n['url']})）" if n.get("url") else ""))
-    else:
-        parts.append("（无）")
-    cm = fund.get("credit_macro") or []
-    if cm:
-        parts.append("\n**社融与信贷近 6 个月（亿元）**\n")
-        rows = [[c["period"], dash(c.get("tsf_yi"), nd=0), dash(c.get("new_loans_yi"), nd=0)]
-                for c in cm]
-        parts.append(md_table(["月份", "社融增量", "新增贷款"], rows))
-    return "\n".join(parts)
-
-
-def render_appendix_reg(fund: dict) -> str:
-    parts = []
-    ind = fund.get("industry_regulatory", {}) or {}
-    parts.append("**行业监管指标（商业银行整体）**\n")
-    if ind.get("latest"):
-        rows = [[k, dash(v)] for k, v in ind["latest"].items()]
-        parts.append(md_table([f"指标（{ind.get('latest_period', '')}）", "数值"], rows))
-    else:
-        period = ind.get("latest_period") or "最新期"
-        parts.append(f"台账待填报（{period}）：净息差/不良率/拨备覆盖率/资本充足率/利润同比 均待人工从"
-                     "金融监管总局季度《商业银行主要监管指标》通报填报（data/regulatory_indicators.json）。")
-    if ind.get("trend"):
-        parts.append("\n趋势：" + "；".join(str(t) for t in ind["trend"]))
-    gaps = fund.get("meta", {}).get("curated_gaps", [])
-    parts.append(f"\n**本周待办（curated_gaps 共 {len(gaps)} 项）**\n")
-    if gaps:
-        for g in gaps:
-            parts.append(f"- [ ] {g}")
-    else:
-        parts.append("（无）")
-    return "\n".join(parts)
+    note = (f"\n\n> 专项指标来源：东财 F10 主要指标/分红送配自动拉取（fin_indicators_{as_of}）；"
+            f"分红率为上一完整财年口径；存款/贷款 YoY 为对上年同报告期自算。" if as_of else
+            "\n\n> 专项指标：fin_indicators 缓存缺失（可运行 fin_indicators_puller）。")
+    return t1 + t2 + note
 
 
 # ---------------------------------------------------------------- 主流程
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="生成银行板块周报 Markdown（正文+附录）")
+    ap = argparse.ArgumentParser(description="生成银行板块周报 Markdown（指标+图表仪表盘）")
     ap.add_argument("--date", default=None, help="报告日期 YYYY-MM-DD，默认今天")
     ap.add_argument("--out", default=None, help="输出目录，默认 output/weekly")
     args = ap.parse_args()
@@ -605,18 +535,15 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     market, d_mkt = load_latest("market_*.json", target)
-    news, d_news = load_latest("news_*.json", target)
     fund, d_fund = load_latest("fundamentals_*.json", target)
     if market is None:
         raise SystemExit(f"错误：data/ 下没有 ≤ {target} 的 market_*.json，请先运行 data_puller.py")
-    news = news or {"flash": [], "notices": [], "meta": {}}
-    fund = fund or {"banks": [], "credit_macro": [], "industry_regulatory": {},
-                    "meta": {"curated_gaps": []}}
-    data_as_of = max(d for d in (d_mkt, d_news, d_fund) if d).isoformat()
+    fund = fund or {"banks": [], "credit_macro": [], "meta": {}}
+    data_as_of = max(d for d in (d_mkt, d_fund) if d).isoformat()
 
     ah_stats = ah_premium_stats(market, target)
-    signals = build_signals(market, ah_stats)
     _, spread, spread_note = update_spread_history(target, market)
+    enrich = enrich_stocks(market, fund, target)
 
     filled = TEMPLATE.read_text(encoding="utf-8")
     replacements = {
@@ -624,20 +551,19 @@ def main() -> None:
         "{{DATA_AS_OF}}": data_as_of,
         "{{GENERATED_AT}}": datetime.now().isoformat(timespec="seconds"),
         "{{METHOD_VERSION}}": methodology.current_version(),
-        "{{DASHBOARD}}": render_dashboard(market, ah_stats, spread, spread_note),
+        "{{DASHBOARD}}": render_dashboard(market, ah_stats, spread, spread_note, enrich),
         "{{WOW_CHANGES}}": render_wow(market, ah_stats),
-        "{{VIEW_DRAFTS}}": render_view_drafts(market, news, fund, signals),
+        "{{CROSS_INDEX}}": render_cross_index(market, enrich, target),
+        "{{VALUATION_LEVEL}}": render_valuation_level(market, enrich),
         "{{AH_FACTOR}}": render_ah_factor(market, ah_stats),
+        "{{FUND_SUMMARY}}": render_fund_summary(fund),
+        "{{MACRO_RATES}}": render_macro(market, fund),
         "{{CHART_INDEX}}": fence(chart_index_relative(market, target)),
         "{{CHART_MOVES}}": fence(chart_weekly_moves(market)),
         "{{CHART_AH}}": fence(chart_ah_premium(market)),
-        "{{EVENTS_POLICY}}": render_events_policy(market, news, fund),
-        "{{FUND_SUMMARY}}": render_fund_summary(fund),
-        "{{WEEKLY_FOCUS}}": render_weekly_focus(target),
-        "{{APPENDIX_MARKET}}": render_appendix_market(market),
+        "{{CHART_PB_PCTILE}}": fence(chart_pb_pctile(market, enrich)),
+        "{{APPENDIX_MARKET}}": render_appendix_market(market, enrich),
         "{{APPENDIX_LEDGER}}": render_appendix_ledger(fund),
-        "{{APPENDIX_NEWS}}": render_appendix_news(news, fund),
-        "{{APPENDIX_REG}}": render_appendix_reg(fund),
     }
     for token, value in replacements.items():
         if token not in filled:
@@ -651,14 +577,7 @@ def main() -> None:
     tmp = out_file.with_suffix(".md.tmp")
     tmp.write_text(filled, encoding="utf-8")
     tmp.replace(out_file)
-
-    gaps = fund.get("meta", {}).get("curated_gaps", [])
     print(f"已生成 {out_file}")
-    print("人工待办清单：")
-    print("  [待撰写] 一、核心观点")
-    print("  [待修订] 四、观点初稿（短期/长期初稿已给，正文部分）")
-    print("  [待补充] 八、下周关注（【人工补充】项）")
-    print("  [台账]   curated_gaps 共 %d 项待填报（见附录附4「本周待办」）" % len(gaps))
 
 
 if __name__ == "__main__":

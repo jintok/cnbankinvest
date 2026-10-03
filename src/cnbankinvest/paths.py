@@ -9,9 +9,8 @@
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[2]   # 仓库根（src/cnbankinvest/ 上两级）
-DATA_DIR = ROOT_DIR / "data"                      # 拉数缓存 + 手工台账（原始快照不入库）
-REGULATORY_PATH = DATA_DIR / "regulatory_indicators.json"   # 手工台账：行业监管指标
-CURATED_PATH = DATA_DIR / "bank_fundamentals.json"          # 手工台账：个股专项指标
+DATA_DIR = ROOT_DIR / "data"                      # 拉数缓存（原始快照不入库）
+VALUATION_HIST_DIR = DATA_DIR / "valuation_hist"  # 估值历史缓存（PB 日频 + 分红记录，gitignore）
 OUTPUT_DIR = ROOT_DIR / "output"                  # 有留存价值的产出（报告/评论，入库）
 WEEKLY_DIR = OUTPUT_DIR / "weekly"                # 周报 Markdown
 SINGLE_DIR = OUTPUT_DIR / "single"                # 个股报告 Markdown
