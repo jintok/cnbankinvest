@@ -15,6 +15,7 @@ scripts/refresh_weekly.sh --date 2026-09-25   # 复现指定日期；周末运�
 
 - 单独重跑某一步：`.venv/bin/python -m cnbankinvest.<模块> --date ...`（均支持 `--date`）。
 - 验证改动：用已有数据重跑生成器即可（如 `gen_weekly_report --date 2026-09-25`），不需要真实拉网。
+- **CI 自动刷新**：`.github/workflows/weekly_refresh.yml` 每周五 16:35 CST（08:35 UTC）自动跑全流程 + 12 家个股报告并推回 main（Pages 随之重建）；Actions 页可手动 dispatch（可传 `date` 复现指定周五）。日线/估值缓存经 `actions/cache` 传递（未命中则全量重拉）。`.github/workflows/probe_sources.yml` 为数据源可达性探针（手动触发）。
 
 ## Environment
 

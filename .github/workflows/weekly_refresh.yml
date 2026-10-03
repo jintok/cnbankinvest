@@ -1,0 +1,79 @@
+# 每周五 16:35 CST（08:35 UTC）A股收盘后自动刷新周报 + 12 家个股报告 + 站点。
+# 手动触发可传 date 复现指定周五（如 2026-10-02）。
+# 数据源可达性已实测（probe-sources，2026-10-03：17/17 ✅，见 INTERFACE_NOTES.md）。
+name: weekly-refresh
+
+on:
+  schedule:
+    - cron: "35 8 * * 5"   # 周五 08:35 UTC = 16:35 CST
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "报告日期 YYYY-MM-DD（留空 = 最近周五）"
+        required: false
+        type: string
+
+permissions:
+  contents: write   # 推回 output/ docs/ data/spread_history.json
+
+concurrency:
+  group: weekly-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: 安装依赖（uv.lock 锁版 + 本项目可编辑安装）
+        run: uv sync
+
+      - name: 恢复日线/估值缓存（未命中则全量重拉，约 5 分钟）
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/hist
+            data/valuation_hist
+          key: weekly-hist-${{ github.run_id }}
+          restore-keys: weekly-hist-
+
+      - name: 计算目标日期（默认最近周五）
+        id: d
+        run: |
+          if [ -n "${{ inputs.date }}" ]; then
+            D="${{ inputs.date }}"
+          else
+            D=$(date -d "last friday" +%F)
+            # 周五当天 16:35 CST 运行时 last friday 会取到上一周，修正为今天
+            if [ "$(date -u -d '+8 hours' +%u)" = "5" ]; then D=$(date -u -d '+8 hours' +%F); fi
+          fi
+          echo "date=$D" >> "$GITHUB_OUTPUT"
+          echo "目标日期: $D"
+
+      - name: 一键刷新（5 步：拉数 → 专项指标 → 基本面 → 周报 → 站点）
+        run: scripts/refresh_weekly.sh --date "${{ steps.d.outputs.date }}"
+
+      - name: 生成 12 家个股报告（离线，秒级）
+        run: |
+          for code in $(.venv/bin/python -c "
+          import json; print(' '.join(s['a_code'] for s in json.load(open('watchlist.json'))['stocks']))"); do
+            .venv/bin/python -m cnbankinvest.gen_single_report --code "$code" --date "${{ steps.d.outputs.date }}"
+          done
+          .venv/bin/python -m cnbankinvest.gen_site
+
+      - name: 提交并推回（有变更才提交；作者按 AGENTS 约定用 noreply）
+        run: |
+          git config user.name "jintok"
+          git config user.email "jintok@users.noreply.github.com"
+          git add output/ docs/ data/spread_history.json
+          if git diff --cached --quiet; then
+            echo "无变更（目标日期报告可能已存在），跳过提交"
+          else
+            git commit -m "CI 周报刷新 ${{ steps.d.outputs.date }}（workflow: weekly-refresh）"
+            git push origin main
+          fi

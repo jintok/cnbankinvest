@@ -51,8 +51,13 @@ scripts/refresh_weekly.sh          # 周五收盘后运行；或 --date 2026-09-
 
 `scripts/refresh_weekly.sh` 第 5 步自动读取 `output/weekly/`、`output/single/`，生成静态站点到 `docs/`（暗色主题、零外部依赖、可离线打开）：
 首页 `docs/index.html`、方法论页、周报与个股报告的 HTML 版。发布方式：GitHub 仓库
-Settings → Pages → Source 选 `/docs`（分支 master），站点地址为
-`https://<user>.github.io/cnbankinvest/`。本地预览直接浏览器打开 `docs/index.html` 即可。
+Settings → Pages → Source 选 `/docs`（分支 main），站点地址为
+`https://jintok.github.io/cnbankinvest/`。本地预览直接浏览器打开 `docs/index.html` 即可。
+
+**CI 自动刷新**：`.github/workflows/weekly_refresh.yml` 每周五 16:35 CST 自动跑全流程
+（拉数 → 周报 → 12 家个股报告 → 站点）并把产出推回 main，Pages 自动重建；
+也可在 Actions 页手动 dispatch（可传 `date` 复现指定周五）。
+`.github/workflows/probe_sources.yml` 可手动探测各数据源在 GH runner 上的可达性。
 
 ## 数据口径与来源
 

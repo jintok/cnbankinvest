@@ -215,3 +215,10 @@
 - ✅ `EPSJB`（基本每股收益）/ `BPS`（每股净资产）——每股指标无需新数据源（比同花顺摘要更直接，且带 `EPSJBTZ/BPSTZ` 同比列）。
 - ✅ `OVERDUE_LOANS`（逾期贷款，元）→ 逾期率 = 逾期÷GROSSLOANS（资产质量前瞻指标，工行 2026中报 5126亿/32.0万亿 ≈ 1.60%）。
 - ⚠️ 裸 `symbol="601398"` 会 NoneType；必须 `symbol="601398.SH"` + `indicator="按报告期"`（与 fin_indicators_puller 现有调用一致）。
+
+## GitHub Actions 环境探测（2026-10-03，probe-sources workflow 实测）
+
+- ✅ **17/17 数据源在 GitHub 托管 runner（ubuntu-latest，境外 IP）全部可达**：新浪（A/H 日线/分红历史）、
+  中证官网（日线+估值）、申万、中债、Shibor、LPR、南向、东财 datacenter-web（估值/F10/分红送配）、
+  中行汇率、同花顺、社融/信贷。单发不重试即全部成功，耗时 0.6s–14.6s（Shibor 最慢）。
+- 结论：weekly_refresh 定时任务可行；东财 push2/push2his 行情域名未测也不用（项目本来就不用）。
