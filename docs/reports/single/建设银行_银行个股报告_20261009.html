@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>建设银行（A股 601939 / H股 00939）个股研究报告</title>
+<style>
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { background:#0d1117; color:#c9d1d9; margin:0; padding-top:48px; font-family:-apple-system,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif; line-height:1.65; transition:padding-left .25s ease; }
+.topbar { position:fixed; top:0; left:0; right:0; z-index:30; height:48px; display:flex; align-items:center; gap:12px; background:#161b22; border-bottom:1px solid #30363d; padding:0 14px; }
+.topbar .brand { color:#e6edf3; font-weight:600; font-size:15px; }
+.nav-toggle { width:34px; height:32px; background:#0d1117; border:1px solid #30363d; border-radius:6px; color:#58a6ff; font-size:15px; line-height:1; cursor:pointer; }
+.nav-toggle:hover { background:#21262d; }
+.sidebar { position:fixed; top:48px; bottom:0; left:0; width:280px; z-index:40; overflow-y:auto; overscroll-behavior:contain; background:#0d1117; border-right:1px solid #30363d; padding:2px 12px 40px; transform:translateX(-100%); transition:transform .25s ease; }
+body.nav-open .sidebar { transform:none; }
+.sb-backdrop { display:none; position:fixed; top:48px; left:0; right:0; bottom:0; z-index:35; background:rgba(1,4,9,.6); }
+.sb-title { color:#8b949e; font-size:12px; margin:18px 4px 6px; }
+.sb-list { list-style:none; margin:0; padding:0; }
+.sb-list li { margin:1px 0; }
+.sb-list a { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#58a6ff; text-decoration:none; font-size:14px; padding:4px 8px; border-radius:6px; border-left:2px solid transparent; }
+.sb-list a:hover { background:#161b22; text-decoration:none; }
+.sb-list a.current { color:#e6edf3; background:#161b22; border-left-color:#58a6ff; }
+.toc a.active { color:#e6edf3; background:#161b22; border-left-color:#f0883e; }
+.toc li.lv3 { padding-left:16px; }
+.toc li.lv3 a { font-size:13px; }
+@media (min-width:900px) { body.nav-open { padding-left:280px; } }
+@media (max-width:899.98px) { body.nav-open .sb-backdrop { display:block; } }
+main { max-width:960px; margin:0 auto; padding:24px 20px 60px; }
+h1 { border-bottom:1px solid #30363d; padding-bottom:10px; font-size:26px; }
+h2 { border-bottom:1px solid #21262d; padding-bottom:6px; margin-top:36px; font-size:21px; scroll-margin-top:64px; }
+h3 { font-size:17px; color:#c9d1d9; scroll-margin-top:64px; }
+a { color:#58a6ff; }
+strong { color:#e6edf3; }
+code { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:2px 6px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:0.9em; }
+blockquote { background:#161b22; border-left:4px solid #30363d; margin:12px 0; padding:8px 16px; color:#8b949e; }
+blockquote.fine { background:none; border-left-color:#21262d; font-size:12px; color:#8b949e; padding:4px 12px; }
+table { border-collapse:collapse; margin:14px 0; width:100%; font-size:14px; }
+th, td { border:1px solid #30363d; padding:7px 12px; text-align:left; }
+th { background:#161b22; color:#e6edf3; white-space:nowrap; }
+tr:nth-child(even) td { background:rgba(110,118,129,0.08); }
+hr { border:none; border-top:1px solid #30363d; margin:28px 0; }
+ul, ol { padding-left:24px; }
+li { margin:4px 0; }
+pre { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:10px 12px; overflow-x:auto; font-size:13px; }
+pre code { background:none; border:none; padding:0; font-size:inherit; }
+.chart { margin:12px 0 18px; padding:10px 12px 6px; background:#161b22; border:1px solid #30363d; border-radius:8px; }
+.chart svg { display:block; width:100%; height:auto; }
+footer { border-top:1px solid #30363d; color:#8b949e; font-size:13px; text-align:center; padding:20px; }
+</style>
+</head>
+<body>
+<header class="topbar"><button id="navToggle" class="nav-toggle" aria-label="展开或收起侧栏">☰</button><span class="brand">银行板块研究</span></header>
+<aside class="sidebar" id="sidebar"><div class="sb-title">站内导航</div><ul class="sb-list"><li class="lv2"><a href="../../index.html">首页</a></li><li class="lv2"><a href="../../methodology.html">方法论</a></li></ul><div class="sb-title">本页目录</div><ul class="sb-list toc"><li class="lv2"><a href="#toc-1">一、关键指标仪表盘</a></li><li class="lv2"><a href="#toc-2">二、近期行情与市场表现</a></li><li class="lv2"><a href="#toc-3">三、估值分析</a></li><li class="lv2"><a href="#toc-4">四、基本面分析</a></li><li class="lv2"><a href="#toc-5">五、风险提示</a></li></ul><div class="sb-title">周报归档</div><ul class="sb-list"><li class="lv2"><a href="../../reports/weekly/bank_weekly_2026-10-09.html">2026-10-09 周报</a></li><li class="lv2"><a href="../../reports/weekly/bank_weekly_2026-10-02.html">2026-10-02 周报</a></li><li class="lv2"><a href="../../reports/weekly/bank_weekly_2026-09-25.html">2026-09-25 周报</a></li></ul><div class="sb-title">个股报告</div><ul class="sb-list"><li class="lv2"><a href="../../reports/single/中国银行_银行个股报告_20261009.html">中国银行（2026-10-09）</a></li><li class="lv2"><a href="../../reports/single/交通银行_银行个股报告_20261009.html">交通银行（2026-10-09）</a></li><li class="lv2"><a href="../../reports/single/兴业银行_银行个股报告_20261009.html">兴业银行（2026-10-09）</a></li><li class="lv2"><a href="../../reports/single/农业银行_银行个股报告_20261009.html">农业银行（2026-10-09）</a></li><li class="lv2"><a href="../../reports/single/宁波银行_银行个股报告_20261009.html">宁波银行（2026-10-09）</a></li><li class="lv2"><a href="../../reports/single/工商银行_银行个股报告_20261009.html">工商银行（2026-10-09）</a></li><li class="lv2"><a href="../../reports/single/平安银行_银行个股报告_20261009.html">平安银行（2026-10-09）</a></li><li class="lv2"><a class="current" href="../../reports/single/建设银行_银行个股报告_20261009.html">建设银行（2026-10-09）</a></li><li class="lv2"><a href="../../reports/single/成都银行_银行个股报告_20261009.html">成都银行（2026-10-09）</a></li><li class="lv2"><a href="../../reports/single/招商银行_银行个股报告_20261009.html">招商银行（2026-10-09）</a></li><li class="lv2"><a href="../../reports/single/江苏银行_银行个股报告_20261009.html">江苏银行（2026-10-09）</a></li><li class="lv2"><a href="../../reports/single/邮储银行_银行个股报告_20261009.html">邮储银行（2026-10-09）</a></li><li class="lv2"><a href="../../reports/single/中国银行_银行个股报告_20261002.html">中国银行（2026-10-02）</a></li><li class="lv2"><a href="../../reports/single/交通银行_银行个股报告_20261002.html">交通银行（2026-10-02）</a></li><li class="lv2"><a href="../../reports/single/兴业银行_银行个股报告_20261002.html">兴业银行（2026-10-02）</a></li><li class="lv2"><a href="../../reports/single/农业银行_银行个股报告_20261002.html">农业银行（2026-10-02）</a></li><li class="lv2"><a href="../../reports/single/宁波银行_银行个股报告_20261002.html">宁波银行（2026-10-02）</a></li><li class="lv2"><a href="../../reports/single/工商银行_银行个股报告_20261002.html">工商银行（2026-10-02）</a></li><li class="lv2"><a href="../../reports/single/平安银行_银行个股报告_20261002.html">平安银行（2026-10-02）</a></li><li class="lv2"><a href="../../reports/single/建设银行_银行个股报告_20261002.html">建设银行（2026-10-02）</a></li><li class="lv2"><a href="../../reports/single/成都银行_银行个股报告_20261002.html">成都银行（2026-10-02）</a></li><li class="lv2"><a href="../../reports/single/招商银行_银行个股报告_20261002.html">招商银行（2026-10-02）</a></li><li class="lv2"><a href="../../reports/single/江苏银行_银行个股报告_20261002.html">江苏银行（2026-10-02）</a></li><li class="lv2"><a href="../../reports/single/邮储银行_银行个股报告_20261002.html">邮储银行（2026-10-02）</a></li><li class="lv2"><a href="../../reports/single/招商银行_银行个股报告_20260925.html">招商银行（2026-09-25）</a></li></ul></aside>
+<div class="sb-backdrop" id="sbBackdrop"></div>
+<main>
+<h1 id="toc-0">建设银行（A股 601939 / H股 00939）个股研究报告</h1>
+<blockquote>报告日期：2026-10-09 ｜ 数据截止：2026-10-09 ｜ 生成时间：2026-10-09T15:37:35<br>
+全自动「指标 + 图表」报告（无人工撰写段落）；口径见 methodology/ 当前版本。</blockquote>
+<h2 id="toc-1">一、关键指标仪表盘</h2>
+<table><thead><tr><th>指标</th><th>数值</th></tr></thead><tbody><tr><td>A股收盘（元）</td><td>10.98（周 -0.72%）</td></tr><tr><td>H股收盘（港元）</td><td>9.73（周 +1.88%）</td></tr><tr><td>AH 溢价%</td><td>-23.93</td></tr><tr><td>PB</td><td>0.80（近5年分位 P99）</td></tr><tr><td>PE-TTM（倍）</td><td>8.29</td></tr><tr><td>股息率 TTM%</td><td>3.54（近5年分位 P28）</td></tr><tr><td>股息率−10Y 利差 pct</td><td>—</td></tr><tr><td>52 周位置</td><td>94%（区间 8.42–11.15，距高点 -1.52%）</td></tr><tr><td>ROE 年化%（累计年化）</td><td>9.52</td></tr><tr><td>PB-ROE 偏离%</td><td>+24.6</td></tr><tr><td>净息差% / 净利差%</td><td>1.37 / 1.26</td></tr><tr><td>不良率% / 逾期率%</td><td>1.29 / 1.39</td></tr><tr><td>拨备覆盖率%</td><td>239</td></tr><tr><td>核心一级 / 资本充足率%</td><td>14.24 / 19.42</td></tr><tr><td>分红率%（上一完整财年）</td><td>29.9</td></tr><tr><td>存款 / 贷款 YoY%</td><td>+4.80 / +6.91</td></tr></tbody></table>
+<h2 id="toc-2">二、近期行情与市场表现</h2>
+<ul><li><strong>A股</strong>：收盘 10.98 元，周涨跌 -0.72%。</li><li><strong>H股</strong>：收盘 9.73 港元，周涨跌 +1.88%；AH 溢价 -23.93%（负值=H股折价）。</li><li><strong>AH 对比</strong>：双重上市 7 家 AH 溢价中位数 -20.28%，本行低于中位数（-3.65pct）。</li><li><strong>相对强弱</strong>：本周中证银行 -0.05%、沪深300 -0.93%；本行 A 股相对中证银行 -0.67pct、相对沪深300 +0.21pct。</li><li><strong>南向资金</strong>（H股定价参考）：近 5 个交易日合计净流入 70.93 亿港元。</li></ul>
+<div class="chart"><svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" role="img"><text x="48" y="20" fill="#e6edf3" font-size="13" font-weight="600">本行与基准相对走势（近120交易日，起点=100）</text><rect x="48" y="32" width="12" height="3" fill="#58a6ff"/><text x="64" y="37" fill="#8b949e" font-size="11">建设银行</text><rect x="126" y="32" width="12" height="3" fill="#3fb950"/><text x="142" y="37" fill="#8b949e" font-size="11">中证银行</text><rect x="204" y="32" width="12" height="3" fill="#e3b341"/><text x="220" y="37" fill="#8b949e" font-size="11">沪深300</text><line x1="48" y1="292.0" x2="746" y2="292.0" stroke="#21262d"/><text x="42" y="295.5" fill="#8b949e" font-size="10" text-anchor="end">90</text><line x1="48" y1="232.5" x2="746" y2="232.5" stroke="#21262d"/><text x="42" y="236.0" fill="#8b949e" font-size="10" text-anchor="end">99</text><line x1="48" y1="173.0" x2="746" y2="173.0" stroke="#21262d"/><text x="42" y="176.5" fill="#8b949e" font-size="10" text-anchor="end">107</text><line x1="48" y1="113.5" x2="746" y2="113.5" stroke="#21262d"/><text x="42" y="117.0" fill="#8b949e" font-size="10" text-anchor="end">116</text><line x1="48" y1="54.0" x2="746" y2="54.0" stroke="#21262d"/><text x="42" y="57.5" fill="#8b949e" font-size="10" text-anchor="end">124</text><text x="48.0" y="312" fill="#8b949e" font-size="10" text-anchor="middle">04-13</text><text x="188.8" y="312" fill="#8b949e" font-size="10" text-anchor="middle">05-20</text><text x="329.5" y="312" fill="#8b949e" font-size="10" text-anchor="middle">06-24</text><text x="464.5" y="312" fill="#8b949e" font-size="10" text-anchor="middle">07-27</text><text x="605.2" y="312" fill="#8b949e" font-size="10" text-anchor="middle">08-28</text><text x="746.0" y="312" fill="#8b949e" font-size="10" text-anchor="middle">10-09</text><line x1="48" y1="223.3" x2="746" y2="223.3" stroke="#30363d" stroke-dasharray="4 3"/><polyline fill="none" stroke="#58a6ff" stroke-width="1.8" points="48.0,223.3 53.9,220.2 59.7,212.5 65.6,213.2 71.5,216.3 77.3,192.3 83.2,182.9 89.1,187.6 94.9,192.3 100.8,191.5 106.7,196.2 112.5,186.8 118.4,186.1 124.3,175.2 130.1,186.8 136.0,193.8 141.8,195.4 147.7,201.6 153.6,199.2 159.4,200.8 165.3,191.5 171.2,185.3 177.0,189.9 182.9,176.8 188.8,182.9 194.6,167.4 200.5,163.6 206.4,161.3 212.2,148.1 218.1,155.1 224.0,164.4 229.8,174.5 235.7,165.2 241.6,158.2 247.4,166.7 253.3,169.0 259.2,155.1 265.0,146.6 270.9,144.2 276.8,134.1 282.6,125.6 288.5,118.6 294.4,141.9 300.2,159.0 306.1,161.3 311.9,177.6 317.8,176.0 323.7,165.9 329.5,177.6 335.4,186.1 341.3,188.4 347.1,184.5 353.0,199.2 358.9,203.9 364.7,201.6 370.6,210.1 376.5,197.0 382.3,177.6 388.2,165.9 394.1,179.9 399.9,169.0 405.8,141.9 411.7,152.7 417.5,155.8 423.4,171.3 429.3,143.5 435.1,121.7 441.0,141.1 446.9,138.8 452.7,137.2 458.6,135.7 464.5,128.0 470.3,106.2 476.2,107.0 482.1,80.7 487.9,90.0 493.8,121.0 499.6,148.1 505.5,159.0 511.4,147.3 517.2,150.4 523.1,145.8 529.0,138.0 534.8,137.2 540.7,132.6 546.6,137.2 552.4,132.6 558.3,122.5 564.2,113.2 570.0,110.9 575.9,114.8 581.8,104.7 587.6,104.7 593.5,103.9 599.4,111.7 605.2,102.3 611.1,79.9 617.0,71.3 622.8,67.5 628.7,82.2 634.6,79.9 640.4,100.8 646.3,103.1 652.2,92.3 658.0,82.2 663.9,76.8 669.7,69.8 675.6,83.7 681.5,90.0 687.3,85.3 693.2,93.1 699.1,83.7 704.9,84.5 710.8,91.5 716.7,79.9 722.5,78.4 728.4,76.0 734.3,73.7 740.1,66.8 746.0,79.9"><title>建设银行</title></polyline><polyline fill="none" stroke="#3fb950" stroke-width="1.8" points="48.0,223.3 53.9,217.1 59.7,209.5 65.6,212.2 71.5,215.1 77.3,207.7 83.2,205.0 89.1,210.0 94.9,207.4 100.8,209.5 106.7,212.0 112.5,209.1 118.4,211.7 124.3,217.0 130.1,223.1 136.0,225.3 141.8,225.8 147.7,226.1 153.6,227.9 159.4,231.1 165.3,229.4 171.2,232.5 177.0,239.3 182.9,236.6 188.8,242.7 194.6,241.3 200.5,242.7 206.4,242.6 212.2,241.1 218.1,243.2 224.0,247.7 229.8,235.4 235.7,227.2 241.6,222.9 247.4,229.5 253.3,237.2 259.2,228.1 265.0,224.1 270.9,220.7 276.8,209.5 282.6,211.7 288.5,203.9 294.4,215.4 300.2,224.6 306.1,231.1 311.9,249.2 317.8,244.1 323.7,236.7 329.5,254.1 335.4,260.1 341.3,266.4 347.1,263.5 353.0,279.2 358.9,274.7 364.7,267.0 370.6,267.3 376.5,254.6 382.3,253.7 388.2,247.5 394.1,253.6 399.9,255.2 405.8,243.8 411.7,242.7 417.5,234.6 423.4,242.7 429.3,237.0 435.1,221.0 441.0,236.4 446.9,228.4 452.7,224.6 458.6,222.4 464.5,222.3 470.3,211.6 476.2,210.3 482.1,192.6 487.9,202.6 493.8,198.8 499.6,218.6 505.5,226.6 511.4,224.2 517.2,228.9 523.1,225.9 529.0,226.3 534.8,228.9 540.7,225.5 546.6,229.5 552.4,231.1 558.3,226.6 564.2,213.9 570.0,211.2 575.9,213.3 581.8,203.7 587.6,208.3 593.5,202.6 599.4,210.1 605.2,213.8 611.1,201.8 617.0,188.1 622.8,187.8 628.7,191.4 634.6,184.8 640.4,195.7 646.3,193.0 652.2,191.6 658.0,180.3 663.9,183.9 669.7,177.6 675.6,187.7 681.5,192.7 687.3,194.9 693.2,197.7 699.1,194.2 704.9,194.9 710.8,198.2 716.7,195.9 722.5,197.2 728.4,195.7 734.3,184.6 740.1,176.9 746.0,185.0"><title>中证银行</title></polyline><polyline fill="none" stroke="#e3b341" stroke-width="1.8" points="48.0,223.3 53.9,214.9 59.7,217.3 65.6,209.5 71.5,210.7 77.3,206.3 83.2,204.7 89.1,199.9 94.9,201.9 100.8,204.5 106.7,204.2 112.5,206.2 118.4,198.3 124.3,198.7 130.1,188.1 136.0,184.6 141.8,188.9 147.7,176.7 153.6,177.3 159.4,169.6 165.3,182.4 171.2,190.8 177.0,194.8 182.9,191.8 188.8,192.1 194.6,202.4 200.5,193.0 206.4,181.3 212.2,177.4 218.1,183.4 224.0,182.4 229.8,185.8 235.7,193.1 241.6,182.4 247.4,178.7 253.3,183.9 259.2,197.2 265.0,213.0 270.9,199.6 276.8,207.7 282.6,211.7 288.5,203.3 294.4,185.8 300.2,187.0 306.1,179.8 311.9,178.3 317.8,160.3 323.7,181.7 329.5,178.1 335.4,166.3 341.3,189.5 347.1,180.5 353.0,172.5 358.9,175.7 364.7,197.9 370.6,193.4 376.5,193.4 382.3,201.1 388.2,206.6 394.1,188.2 399.9,202.8 405.8,215.8 411.7,200.3 417.5,201.8 423.4,215.3 429.3,241.1 435.1,230.6 441.0,209.1 446.9,212.5 452.7,210.8 458.6,222.8 464.5,214.7 470.3,235.0 476.2,230.3 482.1,238.0 487.9,232.1 493.8,239.0 499.6,230.1 505.5,221.4 511.4,222.5 517.2,215.9 523.1,214.8 529.0,220.6 534.8,216.5 540.7,220.6 546.6,220.3 552.4,208.8 558.3,211.2 564.2,232.1 570.0,231.4 575.9,227.5 581.8,235.9 587.6,237.6 593.5,231.7 599.4,225.7 605.2,228.9 611.1,226.5 617.0,228.6 622.8,238.2 628.7,237.5 634.6,238.2 640.4,234.1 646.3,236.6 652.2,234.5 658.0,238.1 663.9,244.0 669.7,248.5 675.6,253.1 681.5,248.5 687.3,251.6 693.2,244.4 699.1,239.5 704.9,238.8 710.8,242.9 716.7,254.8 722.5,269.8 728.4,269.1 734.3,267.2 740.1,274.4 746.0,273.4"><title>沪深300</title></polyline></svg></div>
+<h2 id="toc-3">三、估值分析</h2>
+<table><thead><tr><th>指标</th><th>本行</th><th>全池中位数(12家)</th><th>同板块中位数(国有大行)</th></tr></thead><tbody><tr><td>PB</td><td>0.80</td><td>0.80</td><td>0.77</td><td>接近全池 / 接近同板块</td></tr><tr><td>PE-TTM（倍）</td><td>8.29</td><td>7.15</td><td>8.02</td><td>高于全池 / 接近同板块</td></tr><tr><td>股息率TTM（%）</td><td>3.54</td><td>4.11</td><td>3.67</td><td>低于全池 / 接近同板块</td></tr></tbody></table>
+<p><strong>历史位置</strong>：PB 近 5 年分位 P99；股息率近 5 年分位 P28；52 周位置 94%（距高点 -1.52%）；PB-ROE 偏离 +24.6%（相对高估）。</p>
+<p><strong>股息率−10Y国债利差</strong>：—（股息率或 10Y 国债数据缺失）。</p>
+<blockquote>板块定位：国有大行共 6 家，PB 区间 0.59（交通银行）~ 0.85（农业银行）。</blockquote>
+<h2 id="toc-4">四、基本面分析</h2>
+<p><strong>最新报告期 2026Q2</strong>：营收 4365.29 亿（YoY +10.72%），净利 1695.64 亿（YoY +4.62%），累计 ROE 4.76%。</p>
+<table><thead><tr><th>报告期</th><th>营收(亿)</th><th>营收YoY%</th><th>净利(亿)</th><th>净利YoY%</th><th>ROE%(累计)</th><th>EPS(元)</th><th>BVPS(元)</th></tr></thead><tbody><tr><td><strong>2026Q2</strong>（最新）</td><td>4365.29</td><td>+10.72</td><td>1695.64</td><td>+4.62</td><td>4.76</td><td>0.65</td><td>13.69</td></tr><tr><td>2026Q1</td><td>2112.56</td><td>+11.15</td><td>862.91</td><td>+3.53</td><td>2.46</td><td>0.33</td><td>13.56</td></tr><tr><td>2025Q4</td><td>7610.49</td><td>+1.88</td><td>3389.06</td><td>+0.99</td><td>10.04</td><td>1.30</td><td>13.24</td></tr><tr><td>2025Q3</td><td>5737.02</td><td>+0.82</td><td>2573.60</td><td>+0.62</td><td>7.74</td><td>1.00</td><td>13.12</td></tr><tr><td>2025Q2</td><td>3942.73</td><td>+2.15</td><td>1620.76</td><td>-1.37</td><td>5.04</td><td>0.65</td><td>12.86</td></tr><tr><td>2025Q1</td><td>1900.70</td><td>-5.40</td><td>833.51</td><td>-3.99</td><td>2.61</td><td>0.33</td><td>12.92</td></tr></tbody></table>
+<p><strong>专项指标（东财 F10/分红送配自动拉取）</strong></p>
+<table><thead><tr><th>指标期</th><th>净息差%</th><th>净利差%</th><th>不良率%</th><th>逾期率%</th><th>拨备覆盖率%</th><th>核心一级%</th><th>资本充足率%</th><th>分红率%</th></tr></thead><tbody><tr><td>2026中报</td><td>1.37</td><td>1.26</td><td>1.29</td><td>1.39</td><td>238.80</td><td>14.24</td><td>19.42</td><td>29.90</td></tr></tbody></table>
+<p><strong>规模</strong>：存款 314,543 亿（YoY +4.80%）；贷款 292,868 亿（YoY +6.91%）（YoY 为对上年同报告期自算）。</p>
+<blockquote>自动层缓存 fin_indicators_2026-10-09（指标期 2026中报，分红率财年 2025）。</blockquote>
+<div class="chart"><svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" role="img"><text x="48" y="20" fill="#e6edf3" font-size="13" font-weight="600">营收/净利同比增速（%，近报告期）</text><rect x="48" y="32" width="12" height="3" fill="#58a6ff"/><text x="64" y="37" fill="#8b949e" font-size="11">营收YoY</text><rect x="137" y="32" width="12" height="3" fill="#3fb950"/><text x="153" y="37" fill="#8b949e" font-size="11">净利YoY</text><line x1="48" y1="290.0" x2="746" y2="290.0" stroke="#21262d"/><text x="42" y="293.5" fill="#8b949e" font-size="10" text-anchor="end">-6</text><line x1="48" y1="231.0" x2="746" y2="231.0" stroke="#21262d"/><text x="42" y="234.5" fill="#8b949e" font-size="10" text-anchor="end">-2</text><line x1="48" y1="172.0" x2="746" y2="172.0" stroke="#21262d"/><text x="42" y="175.5" fill="#8b949e" font-size="10" text-anchor="end">3</text><line x1="48" y1="113.0" x2="746" y2="113.0" stroke="#21262d"/><text x="42" y="116.5" fill="#8b949e" font-size="10" text-anchor="end">8</text><line x1="48" y1="54.0" x2="746" y2="54.0" stroke="#21262d"/><text x="42" y="57.5" fill="#8b949e" font-size="10" text-anchor="end">12</text><line x1="48" y1="208.6" x2="746" y2="208.6" stroke="#30363d" stroke-width="1.5"/><rect x="80.2" y="208.6" width="26.0" height="68.8" fill="#58a6ff" rx="2"><title>2025Q1 营收YoY -5.40</title></rect><text x="93.2" y="287.4" fill="#8b949e" font-size="9.5" text-anchor="middle">-5.4</text><rect x="106.2" y="208.6" width="26.0" height="50.8" fill="#3fb950" rx="2"><title>2025Q1 净利YoY -3.99</title></rect><text x="119.2" y="269.4" fill="#8b949e" font-size="9.5" text-anchor="middle">-4.0</text><text x="106.2" y="311" fill="#8b949e" font-size="10" text-anchor="middle">2025Q1</text><rect x="196.5" y="181.2" width="26.0" height="27.4" fill="#58a6ff" rx="2"><title>2025Q2 营收YoY +2.15</title></rect><text x="209.5" y="177.2" fill="#8b949e" font-size="9.5" text-anchor="middle">+2.1</text><rect x="222.5" y="208.6" width="26.0" height="17.4" fill="#3fb950" rx="2"><title>2025Q2 净利YoY -1.37</title></rect><text x="235.5" y="236.0" fill="#8b949e" font-size="9.5" text-anchor="middle">-1.4</text><text x="222.5" y="311" fill="#8b949e" font-size="10" text-anchor="middle">2025Q2</text><rect x="312.8" y="198.2" width="26.0" height="10.4" fill="#58a6ff" rx="2"><title>2025Q3 营收YoY +0.82</title></rect><text x="325.8" y="194.2" fill="#8b949e" font-size="9.5" text-anchor="middle">+0.8</text><rect x="338.8" y="200.7" width="26.0" height="7.9" fill="#3fb950" rx="2"><title>2025Q3 净利YoY +0.62</title></rect><text x="351.8" y="196.7" fill="#8b949e" font-size="9.5" text-anchor="middle">+0.6</text><text x="338.8" y="311" fill="#8b949e" font-size="10" text-anchor="middle">2025Q3</text><rect x="429.2" y="184.7" width="26.0" height="23.9" fill="#58a6ff" rx="2"><title>2025Q4 营收YoY +1.88</title></rect><text x="442.2" y="180.7" fill="#8b949e" font-size="9.5" text-anchor="middle">+1.9</text><rect x="455.2" y="196.0" width="26.0" height="12.6" fill="#3fb950" rx="2"><title>2025Q4 净利YoY +0.99</title></rect><text x="468.2" y="192.0" fill="#8b949e" font-size="9.5" text-anchor="middle">+1.0</text><text x="455.2" y="311" fill="#8b949e" font-size="10" text-anchor="middle">2025Q4</text><rect x="545.5" y="66.6" width="26.0" height="142.0" fill="#58a6ff" rx="2"><title>2026Q1 营收YoY +11.15</title></rect><text x="558.5" y="62.6" fill="#8b949e" font-size="9.5" text-anchor="middle">+11.2</text><rect x="571.5" y="163.7" width="26.0" height="44.9" fill="#3fb950" rx="2"><title>2026Q1 净利YoY +3.53</title></rect><text x="584.5" y="159.7" fill="#8b949e" font-size="9.5" text-anchor="middle">+3.5</text><text x="571.5" y="311" fill="#8b949e" font-size="10" text-anchor="middle">2026Q1</text><rect x="661.8" y="72.1" width="26.0" height="136.5" fill="#58a6ff" rx="2"><title>2026Q2 营收YoY +10.72</title></rect><text x="674.8" y="68.1" fill="#8b949e" font-size="9.5" text-anchor="middle">+10.7</text><rect x="687.8" y="149.8" width="26.0" height="58.8" fill="#3fb950" rx="2"><title>2026Q2 净利YoY +4.62</title></rect><text x="700.8" y="145.8" fill="#8b949e" font-size="9.5" text-anchor="middle">+4.6</text><text x="687.8" y="311" fill="#8b949e" font-size="10" text-anchor="middle">2026Q2</text></svg></div>
+<h2 id="toc-5">五、风险提示</h2>
+<ol><li><strong>息差收窄超预期</strong>：LPR 下行与存款成本刚性叠加，净息差收窄速度可能超过预期，拖累营收与利润增速。</li><li><strong>资产质量波动</strong>：对公/零售信贷不良生成率存在上行风险，拨备覆盖率消耗可能加快。</li><li><strong>地产与城投风险暴露</strong>：房地产销售与地方债务化解进展若不及预期，可能引发资产质量恶化与减值计提上升。</li><li><strong>政策不确定性</strong>：货币政策节奏、资本监管要求（如 TLAC、核心一级资本补充）变化可能影响估值中枢。</li></ol>
+<hr>
+<blockquote class="fine">方法论版本：v20261003 ｜ 本报告为个人研究用途，数据来源于公开接口（akshare 聚合的新浪/中证/申万/中债/东财/同花顺等），仅供参考，不构成投资建议。</blockquote>
+</main>
+<footer>生成时间：2026-10-09T15:37:35 ｜ 个人研究用途，数据来自公开接口，不构成投资建议</footer>
+<script>
+(function () {
+  var KEY = 'cnbi-sidebar-open';
+  var body = document.body;
+  var wide = window.matchMedia('(min-width: 900px)');
+  var saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) {}
+  if (saved === '1') { body.classList.add('nav-open'); }
+  else if (saved === '0') { body.classList.remove('nav-open'); }
+  else if (wide.matches) { body.classList.add('nav-open'); }
+  function save() {
+    try { localStorage.setItem(KEY, body.classList.contains('nav-open') ? '1' : '0'); } catch (e) {}
+  }
+  document.getElementById('navToggle').addEventListener('click', function () {
+    body.classList.toggle('nav-open'); save();
+  });
+  var backdrop = document.getElementById('sbBackdrop');
+  if (backdrop) {
+    backdrop.addEventListener('click', function () { body.classList.remove('nav-open'); save(); });
+  }
+  var sidebar = document.getElementById('sidebar');
+  if (sidebar) {
+    sidebar.addEventListener('click', function (e) {
+      if (e.target.closest('a') && !wide.matches) { body.classList.remove('nav-open'); save(); }
+    });
+  }
+  var map = {};
+  document.querySelectorAll('.toc a').forEach(function (a) {
+    map[a.getAttribute('href').slice(1)] = a;
+  });
+  var heads = Object.keys(map).map(function (id) {
+    return document.getElementById(id);
+  }).filter(Boolean);
+  if (!heads.length) { return; }
+  function spy() {
+    var y = window.scrollY + 96, cur = '';
+    heads.forEach(function (h) { if (h.offsetTop <= y) { cur = h.id; } });
+    Object.keys(map).forEach(function (id) { map[id].classList.toggle('active', id === cur); });
+  }
+  window.addEventListener('scroll', spy, { passive: true });
+  spy();
+})();
+</script>
+</body>
+</html>
